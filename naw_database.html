@@ -733,16 +733,13 @@
       </div>
       <div class="form-group" style="grid-column: 1 / -1;">
         <label id="lbl-adres">Straat &amp; huisnummer</label>
-        <div style="display:flex;gap:16px;margin-bottom:6px;flex-wrap:wrap;">
-          <label style="font-size:0.85rem;font-weight:normal;text-transform:none;letter-spacing:0;white-space:nowrap;display:flex;align-items:center;gap:5px;cursor:pointer;">
-            <input type="radio" name="adrestype" value="straat" checked onchange="updateAdresType()"> Straat
-          </label>
-          <label style="font-size:0.85rem;font-weight:normal;text-transform:none;letter-spacing:0;white-space:nowrap;display:flex;align-items:center;gap:5px;cursor:pointer;">
-            <input type="radio" name="adrestype" value="postbus" onchange="updateAdresType()"> Postbus (NL)
-          </label>
-          <label style="font-size:0.85rem;font-weight:normal;text-transform:none;letter-spacing:0;white-space:nowrap;display:flex;align-items:center;gap:5px;cursor:pointer;">
-            <input type="radio" name="adrestype" value="postfach" onchange="updateAdresType()"> Postfach (DE)
-          </label>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="font-size:0.8rem;color:var(--muted);white-space:nowrap;">Type:</span>
+          <select id="f-adrestype" onchange="updateAdresType()" style="width:180px;flex-shrink:0;">
+            <option value="straat">Straat</option>
+            <option value="postbus">Postbus (NL)</option>
+            <option value="postfach">Postfach (DE)</option>
+          </select>
         </div>
         <div style="display:flex;align-items:center;">
           <span id="adres-prefix" style="display:none;background:#f1f5f9;border:1px solid var(--border);border-right:none;padding:8px 10px;border-radius:6px 0 0 6px;font-size:0.88rem;color:var(--muted);white-space:nowrap;"></span>
@@ -1072,8 +1069,8 @@
       voornaam:      veld('f-voornaam'),
       tussenvoegsel: veld('f-tussenvoegsel'),
       achternaam:    veld('f-achternaam'),
-      adrestype:     document.querySelector('input[name="adrestype"]:checked').value,
-      adres:         (() => { const t = document.querySelector('input[name="adrestype"]:checked').value; const v = veld('f-adres'); return t === 'straat' ? v : (t === 'postbus' ? 'Postbus ' : 'Postfach ') + v; })(),
+      adrestype:     document.getElementById('f-adrestype').value,
+      adres:         (() => { const t = document.getElementById('f-adrestype').value; const v = veld('f-adres'); return t === 'straat' ? v : (t === 'postbus' ? 'Postbus ' : 'Postfach ') + v; })(),
       postcode:      veld('f-postcode').toUpperCase(),
       woonplaats:    veld('f-woonplaats'),
       land:          document.getElementById('f-land').value,
@@ -1276,7 +1273,7 @@
   }
 
   function updateAdresType() {
-    const type = document.querySelector('input[name="adrestype"]:checked').value;
+    const type = document.getElementById('f-adrestype').value;
     const prefix = document.getElementById('adres-prefix');
     const input = document.getElementById('f-adres');
     const label = document.getElementById('lbl-adres');
@@ -1348,9 +1345,11 @@
 
   function valideer(data) {
     let ok = true;
+    // Als bedrijf ingevuld is, zijn voornaam en achternaam niet verplicht
+    const naamVerplicht = !data.bedrijf;
     const regels = {
-      voornaam:   [data.voornaam,   'Voornaam is verplicht.'],
-      achternaam: [data.achternaam, 'Achternaam is verplicht.'],
+      voornaam:   [naamVerplicht ? data.voornaam   : true, 'Voornaam is verplicht (of vul Bedrijf/Instelling in).'],
+      achternaam: [naamVerplicht ? data.achternaam : true, 'Achternaam is verplicht (of vul Bedrijf/Instelling in).'],
       adres:      [data.adres,      'Adres is verplicht.'],
       postcode:   [data.postcode,   'Postcode is verplicht.'],
       woonplaats: [data.woonplaats, 'Woonplaats is verplicht.'],
@@ -1461,7 +1460,7 @@
     document.getElementById('f-achternaam').value    = p.achternaam || '';
     // Adrestype herstellen
     const adrestype = p.adrestype || (p.adres && p.adres.startsWith('Postbus ') ? 'postbus' : p.adres && p.adres.startsWith('Postfach ') ? 'postfach' : 'straat');
-    document.querySelector(`input[name="adrestype"][value="${adrestype}"]`).checked = true;
+    document.getElementById("f-adrestype").value = adrestype;
     updateAdresType();
     const adresWaarde = adrestype === 'postbus' ? (p.adres || '').replace(/^Postbus\s*/,'') : adrestype === 'postfach' ? (p.adres || '').replace(/^Postfach\s*/,'') : (p.adres || '');
     document.getElementById('f-adres').value = adresWaarde;
@@ -1488,7 +1487,7 @@
 
     // Adresgegevens overnemen
     const at = p.adrestype || (p.adres && p.adres.startsWith('Postbus ') ? 'postbus' : p.adres && p.adres.startsWith('Postfach ') ? 'postfach' : 'straat');
-    document.querySelector(`input[name="adrestype"][value="${at}"]`).checked = true;
+    document.getElementById("f-adrestype").value = at;
     updateAdresType();
     const av = at === 'postbus' ? (p.adres||'').replace(/^Postbus\s*/,'') : at === 'postfach' ? (p.adres||'').replace(/^Postfach\s*/,'') : (p.adres||'');
     document.getElementById('f-adres').value = av;
@@ -1536,7 +1535,7 @@
       .forEach(id => { document.getElementById(id).textContent = ''; });
     ['f-voornaam','f-achternaam','f-adres','f-postcode','f-woonplaats']
       .forEach(id => { document.getElementById(id).classList.remove('error'); });
-    document.querySelector('input[name="adrestype"][value="straat"]').checked = true;
+    document.getElementById("f-adrestype").value = "straat";
     updateAdresType();
     document.getElementById('form-title').textContent = '✏️ Nieuwe persoon toevoegen';
   }
@@ -1579,7 +1578,8 @@
 
   // ───── TABEL RENDER ─────
   function volledigeNaam(p) {
-    return [p.titel, p.voornaam, p.tussenvoegsel, p.achternaam].filter(Boolean).join(' ');
+    const naam = [p.titel, p.voornaam, p.tussenvoegsel, p.achternaam].filter(Boolean).join(' ');
+    return naam || p.bedrijf || '';
   }
 
   function formatDatum(d) {
