@@ -731,9 +731,23 @@
         <label>Bedrijf / Praktijk <span class="optional">(optioneel)</span></label>
         <input type="text" id="f-bedrijf" placeholder="bijv. Tandartspraktijk De Glimlach" />
       </div>
-      <div class="form-group">
-        <label>Straat &amp; huisnummer</label>
-        <input type="text" id="f-adres" placeholder="Hoofdstraat 12" />
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label id="lbl-adres">Straat &amp; huisnummer</label>
+        <div style="display:flex;gap:16px;margin-bottom:6px;flex-wrap:wrap;">
+          <label style="font-size:0.85rem;font-weight:normal;text-transform:none;letter-spacing:0;white-space:nowrap;display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="radio" name="adrestype" value="straat" checked onchange="updateAdresType()"> Straat
+          </label>
+          <label style="font-size:0.85rem;font-weight:normal;text-transform:none;letter-spacing:0;white-space:nowrap;display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="radio" name="adrestype" value="postbus" onchange="updateAdresType()"> Postbus (NL)
+          </label>
+          <label style="font-size:0.85rem;font-weight:normal;text-transform:none;letter-spacing:0;white-space:nowrap;display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="radio" name="adrestype" value="postfach" onchange="updateAdresType()"> Postfach (DE)
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;">
+          <span id="adres-prefix" style="display:none;background:#f1f5f9;border:1px solid var(--border);border-right:none;padding:8px 10px;border-radius:6px 0 0 6px;font-size:0.88rem;color:var(--muted);white-space:nowrap;"></span>
+          <input type="text" id="f-adres" placeholder="Hoofdstraat 12" style="flex:1;" />
+        </div>
         <span class="error-msg" id="e-adres"></span>
       </div>
       <div class="form-group">
@@ -1058,7 +1072,8 @@
       voornaam:      veld('f-voornaam'),
       tussenvoegsel: veld('f-tussenvoegsel'),
       achternaam:    veld('f-achternaam'),
-      adres:         veld('f-adres'),
+      adrestype:     document.querySelector('input[name="adrestype"]:checked').value,
+      adres:         (() => { const t = document.querySelector('input[name="adrestype"]:checked').value; const v = veld('f-adres'); return t === 'straat' ? v : (t === 'postbus' ? 'Postbus ' : 'Postfach ') + v; })(),
       postcode:      veld('f-postcode').toUpperCase(),
       woonplaats:    veld('f-woonplaats'),
       land:          document.getElementById('f-land').value,
@@ -1260,6 +1275,31 @@
     teller.className = 'tel-teller';
   }
 
+  function updateAdresType() {
+    const type = document.querySelector('input[name="adrestype"]:checked').value;
+    const prefix = document.getElementById('adres-prefix');
+    const input = document.getElementById('f-adres');
+    const label = document.getElementById('lbl-adres');
+    if (type === 'straat') {
+      prefix.style.display = 'none';
+      input.style.borderRadius = '6px';
+      input.placeholder = 'Hoofdstraat 12';
+      label.textContent = 'Straat & huisnummer';
+    } else if (type === 'postbus') {
+      prefix.textContent = 'Postbus';
+      prefix.style.display = '';
+      input.style.borderRadius = '0 6px 6px 0';
+      input.placeholder = '1234';
+      label.textContent = 'Postbus';
+    } else {
+      prefix.textContent = 'Postfach';
+      prefix.style.display = '';
+      input.style.borderRadius = '0 6px 6px 0';
+      input.placeholder = '12345';
+      label.textContent = 'Postfach';
+    }
+  }
+
   function updatePostcodePlaceholder() {
     const land = document.getElementById('f-land').value;
     // Sync landnummer dropdown mee
@@ -1419,7 +1459,12 @@
     document.getElementById('f-voornaam').value      = p.voornaam || '';
     document.getElementById('f-tussenvoegsel').value = p.tussenvoegsel || '';
     document.getElementById('f-achternaam').value    = p.achternaam || '';
-    document.getElementById('f-adres').value         = p.adres || '';
+    // Adrestype herstellen
+    const adrestype = p.adrestype || (p.adres && p.adres.startsWith('Postbus ') ? 'postbus' : p.adres && p.adres.startsWith('Postfach ') ? 'postfach' : 'straat');
+    document.querySelector(`input[name="adrestype"][value="${adrestype}"]`).checked = true;
+    updateAdresType();
+    const adresWaarde = adrestype === 'postbus' ? (p.adres || '').replace(/^Postbus\s*/,'') : adrestype === 'postfach' ? (p.adres || '').replace(/^Postfach\s*/,'') : (p.adres || '');
+    document.getElementById('f-adres').value = adresWaarde;
     document.getElementById('f-postcode').value      = p.postcode || '';
     document.getElementById('f-woonplaats').value    = p.woonplaats || '';
     document.getElementById('f-land').value          = p.land || 'NL';
@@ -1442,7 +1487,11 @@
     if (!p) return;
 
     // Adresgegevens overnemen
-    document.getElementById('f-adres').value      = p.adres || '';
+    const at = p.adrestype || (p.adres && p.adres.startsWith('Postbus ') ? 'postbus' : p.adres && p.adres.startsWith('Postfach ') ? 'postfach' : 'straat');
+    document.querySelector(`input[name="adrestype"][value="${at}"]`).checked = true;
+    updateAdresType();
+    const av = at === 'postbus' ? (p.adres||'').replace(/^Postbus\s*/,'') : at === 'postfach' ? (p.adres||'').replace(/^Postfach\s*/,'') : (p.adres||'');
+    document.getElementById('f-adres').value = av;
     document.getElementById('f-postcode').value   = p.postcode || '';
     document.getElementById('f-woonplaats').value = p.woonplaats || '';
     document.getElementById('f-land').value       = p.land || 'NL';
@@ -1487,6 +1536,8 @@
       .forEach(id => { document.getElementById(id).textContent = ''; });
     ['f-voornaam','f-achternaam','f-adres','f-postcode','f-woonplaats']
       .forEach(id => { document.getElementById(id).classList.remove('error'); });
+    document.querySelector('input[name="adrestype"][value="straat"]').checked = true;
+    updateAdresType();
     document.getElementById('form-title').textContent = '✏️ Nieuwe persoon toevoegen';
   }
 
