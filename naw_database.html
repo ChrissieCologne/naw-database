@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NAW Database</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger: #dc2626;
+      --danger-hover: #b91c1c;
+      --success: #16a34a;
+      --success-hover: #15803d;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+      --input-bg: #f8fafc;
+      --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .container { max-width: 1600px; margin: 0 auto; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header h1 span.icon { font-size: 1.5rem; }
+
+    .header-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: var(--primary);
+      color: #fff;
+      border-radius: 999px;
+      padding: 3px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* CARD */
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 18px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* FORM GRID */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    label .optional {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #94a3b8;
+      font-size: 0.75rem;
+    }
+
+    input, select {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: var(--input-bg);
+      color: var(--text);
+      transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
+
+    input.error { border-color: var(--danger); }
+
+    .error-msg { color: var(--danger); font-size: 0.78rem; margin-top: 2px; }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    /* BUTTONS */
+    button {
+      padding: 9px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { background: var(--success-hover); }
+
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: var(--danger-hover); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { background: var(--bg); }
+
+    .btn-sm { padding: 5px 11px; font-size: 0.8rem; border-radius: 6px; }
+
+    /* SEARCH BAR */
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-bar input {
+      flex: 1;
+      min-width: 160px;
+    }
+
+    /* TABLE */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    thead th {
+      background: #f8fafc;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: #f1f5f9; }
+
+    thead th .sort-icon { opacity: 0.4; margin-left: 4px; }
+    thead th.active .sort-icon { opacity: 1; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody tr.editing { background: #eff6ff; }
+
+    td {
+      padding: 8px 10px;
+      vertical-align: middle;
+    }
+
+    td.actions {
+      white-space: nowrap;
+      display: flex;
+      gap: 6px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e293b;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1000;
+      max-width: 320px;
+    }
+
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { border-left: 4px solid #22c55e; }
+    #toast.error { border-left: 4px solid #ef4444; }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+
+    .modal h2 { font-size: 1.1rem; margin-bottom: 10px; }
+    .modal p { color: var(--muted); font-size: 0.9rem; margin-bottom: 22px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    .datum-wrap {
+      display: flex;
+      gap: 6px;
+    }
+
+    .datum-wrap input[type="number"] {
+      -moz-appearance: textfield;
+    }
+    .datum-wrap input[type="number"]::-webkit-inner-spin-button,
+    .datum-wrap input[type="number"]::-webkit-outer-spin-button { display: none; }
+
+    #f-geb-dag  { width: 64px; flex-shrink: 0; }
+    #f-geb-jaar { width: 80px; flex-shrink: 0; }
+    #f-geb-maand { flex: 1; }
+
+    .tel-wrap {
+      display: flex;
+      gap: 0;
+    }
+
+    .tel-wrap select {
+      border-radius: 8px 0 0 8px;
+      border-right: none;
+      background: #f1f5f9;
+      flex-shrink: 0;
+      width: auto;
+      padding-right: 8px;
+      font-size: 0.88rem;
+    }
+
+    .tel-wrap input {
+      border-radius: 0 8px 8px 0;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tel-wrap select:focus {
+      z-index: 1;
+      border-right: none;
+    }
+
+    .tel-wrap input:focus {
+      z-index: 1;
+    }
+
+    .tel-teller {
+      display: none;
+      align-items: center;
+      padding: 0 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      border-left: none;
+      border-radius: 0 8px 8px 0;
+      background: #f8fafc;
+      color: var(--muted);
+      min-width: 52px;
+      justify-content: center;
+    }
+
+    .tel-teller.zichtbaar { display: flex; }
+    .tel-teller.goed  { color: var(--success); border-color: var(--success); background: #f0fdf4; }
+    .tel-teller.fout  { color: var(--danger);  border-color: var(--danger);  background: #fef2f2; }
+    .tel-teller.goed ~ * { border-radius: 0; }
+
+    /* Als teller zichtbaar is, input hoeft geen rechter border-radius */
+    .tel-wrap:has(.tel-teller.zichtbaar) input { border-radius: 0; }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── PRINT ── */
+    #print-venster {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 900;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 12px;
+      overflow-y: auto;
+    }
+    #print-venster.open { display: flex; }
+
+    #print-inhoud {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px;
+      width: min(98vw, 1200px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+
+    .print-tabel-wrap {
+      overflow-x: auto;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+
+    #print-inhoud h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #1e293b;
+    }
+
+    #print-inhoud .print-meta {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+
+    .print-tabel {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .print-tabel th {
+      background: #f1f5f9;
+      padding: 7px 10px;
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .print-tabel td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+      color: #1e293b;
+    }
+
+    .print-tabel tr:last-child td { border-bottom: none; }
+    .print-tabel tr:nth-child(even) td { background: #fafafa; }
+
+    .print-cat-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      background: #e0e7ff;
+      color: #3730a3;
+      border-radius: 999px;
+      padding: 1px 6px;
+      margin-bottom: 2px;
+      display: inline-block;
+    }
+
+    .print-acties {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* ── LABELS ── */
+    #label-venster {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 900;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 12px;
+      overflow-y: auto;
+    }
+    #label-venster.open { display: flex; }
+
+    #label-inhoud {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      width: min(98vw, 900px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+
+    .label-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 16px;
+    }
+
+    .label-item {
+      border: 1px dashed #cbd5e1;
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    .label-item .label-naam { font-weight: 700; font-size: 0.9rem; }
+    .label-item .label-sub  { font-size: 0.78rem; color: #64748b; }
+
+    .label-selectie-bar {
+      display: none;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 10px 14px;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .label-selectie-bar.zichtbaar { display: flex; }
+
+    /* Label config */
+    .label-config {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .label-config-rij {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .label-config-rij:last-of-type { margin-bottom: 10px; }
+    .label-config-rij label { font-size: 0.82rem; display: flex; align-items: center; gap: 6px; }
+    .label-config-rij select, .label-config-rij input[type="number"] {
+      border: 1px solid var(--border); border-radius: 5px;
+      padding: 3px 6px; font-size: 0.82rem; background: white;
+    }
+    .label-config-rij input[type="number"] { width: 52px; }
+    #label-aangepast-velden { display: none; gap: 10px; align-items: center; }
+    .label-config-hint { font-size: 0.8rem; color: var(--muted); }
+
+    /* Positiepicker */
+    .positie-picker {
+      display: grid;
+      gap: 3px;
+      width: fit-content;
+    }
+    .positie-cel {
+      width: 22px; height: 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 2px;
+      cursor: pointer;
+      background: white;
+      transition: background 0.1s;
+    }
+    .positie-cel:hover { background: #dbeafe; border-color: var(--primary); }
+    .positie-cel.gebruikt { background: #e2e8f0; cursor: default; }
+    .positie-cel.geselecteerd {
+      background: var(--primary); border-color: var(--primary);
+    }
+
+    /* checkbox kolom */
+    .cb-col { width: 36px; text-align: center; }
+    input[type="checkbox"] { cursor: pointer; width: 15px; height: 15px; accent-color: var(--primary); }
+
+    @media print {
+      /* ── Tabel afdrukken ── */
+      body.print-tabel > * { display: none !important; }
+      body.print-tabel #print-venster {
+        display: block !important; position: static !important;
+        background: none !important; padding: 0 !important; overflow: visible !important;
+      }
+      body.print-tabel #print-inhoud {
+        box-shadow: none !important; border-radius: 0 !important;
+        padding: 0 !important; width: 100% !important;
+      }
+      body.print-tabel .print-tabel-wrap { border: none !important; overflow: visible !important; }
+      body.print-tabel .print-acties { display: none !important; }
+      body.print-tabel .print-tabel { font-size: 7.5pt !important; table-layout: fixed; width: 100%; }
+      body.print-tabel .print-tabel th,
+      body.print-tabel .print-tabel td { padding: 4px 5px !important; }
+      body.print-tabel .print-tabel tr:nth-child(even) td {
+        background: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      }
+      body.print-tabel .print-cat-badge { font-size: 6pt !important; padding: 0 4px !important; }
+      body.print-tabel #print-inhoud h2 { font-size: 12pt !important; margin-bottom: 2px !important; }
+      body.print-tabel .print-meta { font-size: 8pt !important; margin-bottom: 8px !important; }
+
+      /* ── Labels afdrukken ── */
+      body.print-labels > * { display: none !important; }
+      body.print-labels #label-venster {
+        display: block !important; position: static !important;
+        background: none !important; padding: 0 !important; overflow: visible !important;
+      }
+      body.print-labels #label-inhoud {
+        box-shadow: none !important; border-radius: 0 !important;
+        padding: 0 !important; width: 100% !important;
+      }
+      body.print-labels #label-inhoud h2,
+      body.print-labels #label-inhoud .print-meta,
+      body.print-labels .label-config,
+      body.print-labels .label-acties { display: none !important; }
+      body.print-labels .label-grid {
+        display: grid !important;
+        gap: 4mm !important; margin-top: 0 !important;
+      }
+      body.print-labels .label-item {
+        border: 0.5pt solid #aaa !important; border-radius: 0 !important;
+        padding: 5mm 6mm !important; font-size: 9pt !important; min-height: 28mm !important;
+        page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      }
+      body.print-labels .label-item .label-naam { font-size: 10pt !important; }
+      body.print-labels .label-land-scherm { display: none !important; }
+      body.print-labels .label-land-print { display: block !important; font-weight: 700; letter-spacing: 0.04em; }
+    }
+    .label-land-print { display: none; }
+    .label-leeg { border-style: dashed; opacity: 0.3; pointer-events: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1><span class="icon">🗂️</span> NAW Database</h1>
+    <div class="header-right">
+      <span class="badge" id="count-badge">0 personen</span>
+      <span id="opslag-status" style="font-size:0.78rem;color:var(--muted);"></span>
+      <button class="btn-success btn-sm" onclick="exportJSON()" title="Exporteer als JSON — te importeren in andere browser">⬇ JSON</button>
+      <button class="btn-outline btn-sm" onclick="importJSON()" title="Importeer JSON uit andere browser">⬆ JSON</button>
+      <button class="btn-outline btn-sm" onclick="drukAf()">🖨️ Afdrukken</button>
+      <button class="btn-success btn-sm" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn-outline btn-sm" onclick="openImport()">⬆ CSV</button>
+    </div>
+  </header>
+
+  <!-- FORMULIER -->
+  <div class="card">
+    <div class="card-title" id="form-title">✏️ Nieuwe persoon toevoegen</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Titel <span class="optional">(optioneel)</span></label>
+        <div style="display:flex;gap:6px;">
+          <select id="f-titel-keuze" onchange="updateTitelInput()" style="flex:1;">
+            <option value="">— Geen —</option>
+            <optgroup label="🇩🇪 Duits">
+              <option value="Dr.">Dr.</option>
+              <option value="Dr. med.">Dr. med.</option>
+              <option value="Dr. med. dent.">Dr. med. dent.</option>
+              <option value="Dr. phil.">Dr. phil.</option>
+              <option value="Dr. jur.">Dr. jur.</option>
+              <option value="Dr. rer. nat.">Dr. rer. nat.</option>
+              <option value="Dr. ing.">Dr. ing. (Dr.-Ing.)</option>
+              <option value="Dr.-Ing.">Dr.-Ing.</option>
+              <option value="Prof.">Prof.</option>
+              <option value="Prof. Dr.">Prof. Dr.</option>
+              <option value="Dipl.-Ing.">Dipl.-Ing.</option>
+              <option value="Dipl.-Kfm.">Dipl.-Kfm.</option>
+              <option value="Dipl.-Med.">Dipl.-Med.</option>
+              <option value="M.Sc.">M.Sc.</option>
+              <option value="B.Sc.">B.Sc.</option>
+              <option value="MBA">MBA</option>
+            </optgroup>
+            <optgroup label="🇳🇱 Nederlands">
+              <option value="Dr.">Dr.</option>
+              <option value="Prof.">Prof.</option>
+              <option value="Prof. dr.">Prof. dr.</option>
+              <option value="Ir.">Ir.</option>
+              <option value="Ing.">Ing.</option>
+              <option value="Drs.">Drs.</option>
+              <option value="Mr.">Mr.</option>
+              <option value="Bc.">Bc.</option>
+            </optgroup>
+            <option value="Anders">✏️ Vrij invullen…</option>
+          </select>
+          <input type="text" id="f-titel-vrij" placeholder="bijv. Dipl.-Ing." style="display:none;flex:1;" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Voornaam</label>
+        <input type="text" id="f-voornaam" placeholder="Jan" />
+        <span class="error-msg" id="e-voornaam"></span>
+      </div>
+      <div class="form-group">
+        <label>Tussenvoegsel <span class="optional">(optioneel)</span></label>
+        <input type="text" id="f-tussenvoegsel" placeholder="van de" />
+      </div>
+      <div class="form-group">
+        <label>Achternaam</label>
+        <input type="text" id="f-achternaam" placeholder="Vries" />
+        <span class="error-msg" id="e-achternaam"></span>
+      </div>
+      <div class="form-group">
+        <label>Categorie</label>
+        <select id="f-categorie" onchange="toggleCategorieTekst()">
+          <option value="">— Geen —</option>
+          <option value="Familie">👨‍👩‍👧 Familie</option>
+          <option value="Vriend">🤝 Vriend</option>
+          <option value="Kennis">👤 Kennis</option>
+          <option value="Collega">💼 Collega</option>
+          <option value="Bedrijf">🏢 Bedrijf</option>
+          <option value="Arts">🩺 Arts</option>
+          <option value="Tandarts">🦷 Tandarts</option>
+          <option value="Fysiotherapeut">🏃 Fysiotherapeut</option>
+          <option value="Specialist">🏥 Specialist</option>
+          <option value="Apotheek">💊 Apotheek</option>
+          <option value="Anders">✏️ Anders…</option>
+        </select>
+        <input type="text" id="f-categorie-anders" placeholder="Vul categorie in…" style="display:none;margin-top:6px;" />
+      </div>
+      <div class="form-group">
+        <label>Bedrijf / Praktijk <span class="optional">(optioneel)</span></label>
+        <input type="text" id="f-bedrijf" placeholder="bijv. Tandartspraktijk De Glimlach" />
+      </div>
+      <div class="form-group">
+        <label>Straat &amp; huisnummer</label>
+        <input type="text" id="f-adres" placeholder="Hoofdstraat 12" />
+        <span class="error-msg" id="e-adres"></span>
+      </div>
+      <div class="form-group">
+        <label>Postcode</label>
+        <input type="text" id="f-postcode" placeholder="1234 AB" maxlength="10" oninput="updatePostcodePlaceholder()" />
+        <span class="error-msg" id="e-postcode"></span>
+      </div>
+      <div class="form-group">
+        <label>Woonplaats / Ort / Kota</label>
+        <input type="text" id="f-woonplaats" placeholder="Amsterdam / Berlin / Jakarta / Sydney" />
+        <span class="error-msg" id="e-woonplaats"></span>
+      </div>
+      <div class="form-group">
+        <label>Land</label>
+        <select id="f-land" onchange="updatePostcodePlaceholder()">
+          <option value="NL">🇳🇱 Nederland</option>
+          <option value="DE">🇩🇪 Deutschland</option>
+          <option value="ID">🇮🇩 Indonesia</option>
+          <option value="AU">🇦🇺 Australia</option>
+        </select>
+      </div>
+      <div class="form-group" id="staat-groep" style="display:none;">
+        <label id="staat-label">Staat / Territory</label>
+        <select id="f-staat-au" style="display:none;">
+          <option value="">— Selecteer staat —</option>
+          <option value="NSW">NSW – New South Wales</option>
+          <option value="VIC">VIC – Victoria</option>
+          <option value="QLD">QLD – Queensland</option>
+          <option value="SA">SA – South Australia</option>
+          <option value="WA">WA – Western Australia</option>
+          <option value="TAS">TAS – Tasmania</option>
+          <option value="NT">NT – Northern Territory</option>
+          <option value="ACT">ACT – Australian Capital Territory</option>
+        </select>
+        <input type="text" id="f-staat-tekst" placeholder="bijv. Jawa Barat" style="display:none;" />
+        <span class="error-msg" id="e-staat"></span>
+      </div>
+      <div class="form-group">
+        <label>Telefoon <span class="optional">(optioneel)</span></label>
+        <div class="tel-wrap">
+          <select id="f-landnummer" title="Landnummer" onchange="updateTelPlaceholder()">
+            <option value="+31">🇳🇱 +31</option>
+            <option value="+49">🇩🇪 +49</option>
+            <option value="+62">🇮🇩 +62</option>
+            <option value="+61">🇦🇺 +61</option>
+          </select>
+          <input type="tel" id="f-telefoon" placeholder="612345678" oninput="valideerTelefoonLive()" />
+          <span id="tel-teller" class="tel-teller" title="Aantal cijfers"></span>
+        </div>
+        <span class="error-msg" id="e-telefoon"></span>
+      </div>
+      <div class="form-group">
+        <label>E-mail <span class="optional">(optioneel)</span></label>
+        <input type="email" id="f-email" placeholder="jan@voorbeeld.nl" />
+      </div>
+      <div class="form-group">
+        <label>Geboortedatum <span class="optional">(optioneel)</span></label>
+        <div class="datum-wrap">
+          <input type="number" id="f-geb-dag"  placeholder="DD"   min="1"  max="31"   maxlength="2" oninput="valideerDatumLive()" />
+          <select id="f-geb-maand" onchange="valideerDatumLive()">
+            <option value="">Maand</option>
+            <option value="01">Januari</option>
+            <option value="02">Februari</option>
+            <option value="03">Maart</option>
+            <option value="04">April</option>
+            <option value="05">Mei</option>
+            <option value="06">Juni</option>
+            <option value="07">Juli</option>
+            <option value="08">Augustus</option>
+            <option value="09">September</option>
+            <option value="10">Oktober</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+          <input type="number" id="f-geb-jaar" placeholder="JJJJ" min="1900" max="2099" oninput="valideerDatumLive()" />
+        </div>
+        <span class="error-msg" id="e-geboortedatum"></span>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" onclick="savePersoon()">💾 Opslaan</button>
+      <button class="btn-outline" onclick="resetForm()">✖ Annuleren</button>
+    </div>
+    <input type="hidden" id="edit-id" value="" />
+  </div>
+
+  <!-- ZOEKBALK -->
+  <div class="card">
+    <div class="search-bar">
+      <input type="text" id="zoekterm" placeholder="🔍 Zoeken op naam, adres, woonplaats..." oninput="renderTabel()" />
+      <select id="sort-kolom" onchange="renderTabel()">
+        <option value="achternaam">Sorteer: Achternaam</option>
+        <option value="voornaam">Sorteer: Voornaam</option>
+        <option value="categorie">Sorteer: Categorie</option>
+        <option value="bedrijf">Sorteer: Bedrijf</option>
+        <option value="woonplaats">Sorteer: Woonplaats</option>
+        <option value="geboortedatum">Sorteer: Geboortedatum</option>
+      </select>
+      <button class="btn-outline btn-sm" onclick="toggleSortDir()">
+        <span id="sort-icon">↑↓</span>
+      </button>
+      <button class="btn-outline btn-sm" onclick="toggleSelectieModus()" id="btn-selectie">☑ Selecteren</button>
+      <button class="btn-danger btn-sm" onclick="confirmAllesVerwijderen()" title="Alles verwijderen">🗑 Alles</button>
+    </div>
+  </div>
+
+  <!-- SELECTIEBALK -->
+  <div class="label-selectie-bar" id="selectie-bar">
+    <span id="selectie-teller" style="font-size:0.88rem;color:#1d4ed8;font-weight:600;"></span>
+    <button class="btn-outline btn-sm" onclick="selecteerAlle()">✓ Alles selecteren</button>
+    <button class="btn-outline btn-sm" onclick="deselecteerAlle()">✗ Deselecteer</button>
+    <button class="btn-primary btn-sm" onclick="printLabels()" id="btn-print-labels" style="margin-left:auto;">🏷️ Print labels</button>
+  </div>
+
+  <!-- TABEL -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div class="table-wrap">
+      <table id="naw-table">
+        <thead>
+          <tr>
+            <th class="cb-col" id="th-cb" style="display:none;"><input type="checkbox" id="cb-alles" onchange="toggleAllesCb(this)" title="Alles"></th>
+            <th onclick="setSort('achternaam')">Naam <span class="sort-icon">↕</span></th>
+            <th onclick="setSort('adres')">Adres <span class="sort-icon">↕</span></th>
+            <th onclick="setSort('woonplaats')">Postcode / Woonplaats <span class="sort-icon">↕</span></th>
+            <th onclick="setSort('land')">Land <span class="sort-icon">↕</span></th>
+            <th onclick="setSort('telefoon')">Telefoon <span class="sort-icon">↕</span></th>
+            <th onclick="setSort('email')">E-mail <span class="sort-icon">↕</span></th>
+            <th onclick="setSort('geboortedatum')">Geboortedatum <span class="sort-icon">↕</span></th>
+            <th>Acties</th>
+          </tr>
+        </thead>
+        <tbody id="tabel-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- BEVESTIGING MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-titel">Bevestiging</h2>
+    <p id="modal-tekst"></p>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="sluitModal()">Annuleren</button>
+      <button class="btn-danger" id="modal-bevestig-btn">Verwijderen</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <h2>Importeer CSV</h2>
+    <p>Selecteer een CSV-bestand met kolommen: voornaam, tussenvoegsel, achternaam, adres, postcode, woonplaats, telefoon, email, geboortedatum.</p>
+    <input type="file" id="csv-file" accept=".csv" style="margin-bottom:16px;width:100%;" />
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="sluitImport()">Annuleren</button>
+      <button class="btn-primary" onclick="importCSV()">Importeren</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT VENSTER -->
+<div id="print-venster">
+  <div id="print-inhoud">
+    <h2>🖨️ NAW Database</h2>
+    <div class="print-meta" id="print-meta"></div>
+    <div class="print-tabel-wrap">
+    <table class="print-tabel">
+      <colgroup>
+        <col style="width:20%">
+        <col style="width:22%">
+        <col style="width:18%">
+        <col style="width:20%">
+        <col style="width:12%">
+        <col style="width:8%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th style="white-space:nowrap">Naam</th>
+          <th style="white-space:nowrap">Adres</th>
+          <th style="white-space:nowrap">Telefoon</th>
+          <th style="white-space:nowrap">E-mail</th>
+          <th style="white-space:nowrap">Geboortedatum</th>
+          <th style="white-space:nowrap">Land</th>
+        </tr>
+      </thead>
+      <tbody id="print-tbody"></tbody>
+    </table>
+    </div>
+    <div class="print-acties">
+      <button class="btn-outline" onclick="sluitPrint()">✖ Sluiten</button>
+      <button class="btn-primary" onclick="printTabel()">🖨️ Afdrukken</button>
+    </div>
+  </div>
+</div>
+
+<!-- LABEL VENSTER -->
+<div id="label-venster">
+  <div id="label-inhoud">
+    <h2>🏷️ Adresetiketten</h2>
+    <div class="print-meta" id="label-meta"></div>
+
+    <!-- Formaat + positiekiezer (verborgen bij afdrukken) -->
+    <div class="label-config">
+      <div class="label-config-rij">
+        <label>Labelformaat:
+          <select id="label-preset" onchange="pasLabelFormaatAan()">
+            <option value="2x7">Avery L7163 — 2×7 (14 labels, 99×38 mm)</option>
+            <option value="3x7">Avery L7160 — 3×7 (21 labels, 63×38 mm)</option>
+            <option value="2x5">2×5 (10 labels)</option>
+            <option value="1x4">Avery L7168 — 1×4 (4 labels, groot)</option>
+            <option value="aangepast">Aangepast…</option>
+          </select>
+        </label>
+        <span id="label-aangepast-velden">
+          <label>Kolommen: <input type="number" id="label-kol" value="2" min="1" max="5" onchange="pasLabelFormaatAan()"></label>
+          <label>Rijen: <input type="number" id="label-rij" value="7" min="1" max="20" onchange="pasLabelFormaatAan()"></label>
+        </span>
+      </div>
+      <div class="label-config-rij">
+        <span class="label-config-hint">💡 Zijn er al labels van dit vel gebruikt? Klik hieronder op de <strong>eerste nog vrije positie</strong> — lege placeholders worden dan vooraf ingevoegd zodat de labels goed uitlijnen op het vel.</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="positie-picker" id="positie-picker"></div>
+        <button class="btn-outline btn-sm" onclick="setStartPositie(0)" style="font-size:0.75rem;">↩ Begin bij positie 1</button>
+      </div>
+    </div>
+
+    <div class="label-grid" id="label-grid"></div>
+    <div class="label-acties print-acties">
+      <button class="btn-outline" onclick="sluitLabels()">✖ Sluiten</button>
+      <button class="btn-primary" onclick="printLabelsNu()">🖨️ Afdrukken</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+  // ───── DATA ─────
+  let personen = [];
+  let sortKolom = 'achternaam';
+  let sortDir = 1;
+
+  const OPSLAG_KEY = 'naw_database_v1';
+
+  function slaOpData() {
+    localStorage.setItem(OPSLAG_KEY, JSON.stringify(personen));
+    const nu = new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('opslag-status').textContent = `✓ opgeslagen ${nu}`;
+  }
+
+  function laadData() {
+    // Migreer van naw_cache_v2 als die nog bestaat
+    try {
+      const cache = JSON.parse(localStorage.getItem('naw_cache_v2'));
+      if (cache && Array.isArray(cache.data) && cache.data.length > 0) {
+        localStorage.setItem(OPSLAG_KEY, JSON.stringify(cache.data));
+        localStorage.removeItem('naw_cache_v2');
+      }
+    } catch {}
+
+    try {
+      personen = JSON.parse(localStorage.getItem(OPSLAG_KEY)) || [];
+    } catch { personen = []; }
+  }
+
+  // ── JSON export (voor cross-browser overdracht) ──
+  function exportJSON() {
+    const json = JSON.stringify(personen, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'naw_database_' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    toonToast(`${personen.length} personen geëxporteerd`, 'success');
+  }
+
+  // ── JSON import ──
+  function importJSON() {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.json';
+    inp.onchange = async () => {
+      const file = inp.files[0];
+      if (!file) return;
+      try {
+        const tekst = await file.text();
+        const data = JSON.parse(tekst);
+        if (!Array.isArray(data)) throw new Error();
+        if (personen.length > 0 && !confirm(`Je huidige ${personen.length} personen worden vervangen door ${data.length} uit het bestand. Doorgaan?`)) return;
+        personen = data;
+        slaOpData();
+        renderTabel();
+        toonToast(`${personen.length} personen geladen`, 'success');
+      } catch {
+        toonToast('Ongeldig JSON-bestand', 'error');
+      }
+    };
+    inp.click();
+  }
+
+  // ───── FORM ─────
+  function getVelden() {
+    return {
+      titel:         titelWaarde(),
+      categorie:     categorieWaarde(),
+      bedrijf:       veld('f-bedrijf'),
+      voornaam:      veld('f-voornaam'),
+      tussenvoegsel: veld('f-tussenvoegsel'),
+      achternaam:    veld('f-achternaam'),
+      adres:         veld('f-adres'),
+      postcode:      veld('f-postcode').toUpperCase(),
+      woonplaats:    veld('f-woonplaats'),
+      land:          document.getElementById('f-land').value,
+      staat:         document.getElementById('f-land').value === 'AU'
+                       ? document.getElementById('f-staat-au').value
+                       : (document.getElementById('f-land').value === 'ID'
+                           ? veld('f-staat-tekst') : ''),
+      landnummer:    document.getElementById('f-landnummer').value,
+      telefoon:      veld('f-telefoon'),
+      email:         veld('f-email'),
+      geboortedatum: stelDatumSamen(),
+    };
+  }
+
+  // ───── TITEL ─────
+  const VASTE_TITELS = ['','Dr.','Dr. med.','Dr. med. dent.','Dr. phil.','Dr. jur.','Dr. rer. nat.','Dr. ing.','Dr.-Ing.','Prof.','Prof. Dr.','Prof. dr.','Dipl.-Ing.','Dipl.-Kfm.','Dipl.-Med.','M.Sc.','B.Sc.','MBA','Ing.','Ir.','Mr.','Drs.','Bc.'];
+
+  function titelWaarde() {
+    const sel = document.getElementById('f-titel-keuze').value;
+    if (sel === 'Anders') return veld('f-titel-vrij');
+    return sel;
+  }
+
+  function updateTitelInput() {
+    const sel = document.getElementById('f-titel-keuze').value;
+    document.getElementById('f-titel-vrij').style.display = sel === 'Anders' ? '' : 'none';
+  }
+
+  function vulTitelIn(titel) {
+    const sel = document.getElementById('f-titel-keuze');
+    const vrij = document.getElementById('f-titel-vrij');
+    if (!titel) { sel.value = ''; vrij.style.display = 'none'; return; }
+    if (VASTE_TITELS.includes(titel)) {
+      sel.value = titel; vrij.style.display = 'none';
+    } else {
+      sel.value = 'Anders'; vrij.style.display = ''; vrij.value = titel;
+    }
+  }
+
+  // ───── CATEGORIE ─────
+  function categorieWaarde() {
+    const sel = document.getElementById('f-categorie').value;
+    if (sel === 'Anders') return veld('f-categorie-anders');
+    return sel;
+  }
+
+  function toggleCategorieTekst() {
+    const sel = document.getElementById('f-categorie').value;
+    document.getElementById('f-categorie-anders').style.display = sel === 'Anders' ? '' : 'none';
+  }
+
+  // ───── DATUM ─────
+  function stelDatumSamen() {
+    const dag   = document.getElementById('f-geb-dag').value.trim();
+    const maand = document.getElementById('f-geb-maand').value;
+    const jaar  = document.getElementById('f-geb-jaar').value.trim();
+    if (!dag && !maand && !jaar) return '';
+    const d = dag.padStart(2, '0');
+    const j = jaar.padStart(4, '0');
+    return `${j}-${maand || '00'}-${d}`;
+  }
+
+  function vulDatumIn(iso) {
+    // iso = YYYY-MM-DD
+    if (!iso) { leegDatum(); return; }
+    const [y, m, d] = iso.split('-');
+    document.getElementById('f-geb-dag').value   = parseInt(d, 10) || '';
+    document.getElementById('f-geb-maand').value = m || '';
+    document.getElementById('f-geb-jaar').value  = parseInt(y, 10) || '';
+  }
+
+  function leegDatum() {
+    document.getElementById('f-geb-dag').value   = '';
+    document.getElementById('f-geb-maand').value = '';
+    document.getElementById('f-geb-jaar').value  = '';
+    document.getElementById('e-geboortedatum').textContent = '';
+  }
+
+  function valideerDatumLive() {
+    const dag   = parseInt(document.getElementById('f-geb-dag').value, 10);
+    const maand = parseInt(document.getElementById('f-geb-maand').value, 10);
+    const jaar  = parseInt(document.getElementById('f-geb-jaar').value, 10);
+    const err   = document.getElementById('e-geboortedatum');
+
+    // Niets ingevuld = OK (optioneel)
+    if (!dag && !maand && !jaar) { err.textContent = ''; return; }
+
+    const nu = new Date();
+    if (jaar && (jaar < 1900 || jaar > nu.getFullYear())) {
+      err.textContent = `Ongeldig jaar (1900–${nu.getFullYear()}).`; return;
+    }
+    if (dag && (dag < 1 || dag > 31)) {
+      err.textContent = 'Dag moet tussen 1 en 31 liggen.'; return;
+    }
+    if (dag && maand && jaar) {
+      const datum = new Date(jaar, maand - 1, dag);
+      if (datum.getFullYear() !== jaar || datum.getMonth() + 1 !== maand || datum.getDate() !== dag) {
+        err.textContent = 'Deze datum bestaat niet.'; return;
+      }
+      if (datum > nu) {
+        err.textContent = 'Geboortedatum kan niet in de toekomst liggen.'; return;
+      }
+    }
+    err.textContent = '';
+  }
+
+  const LAND_NUMMER = { NL: '+31', DE: '+49', ID: '+62', AU: '+61' };
+
+  // Telefoon: [min digits, max digits, placeholder, voorbeeld]
+  const TEL_REGELS = {
+    '+31': { min: 9,  max: 9,  placeholder: '612345678',   voorbeeld: '06-12345678' },
+    '+49': { min: 3,  max: 13, placeholder: '11 75306560',  voorbeeld: '030 12345678 of 11 75306560' },
+    '+62': { min: 7,  max: 12, placeholder: '81234567890', voorbeeld: '0812-3456-7890' },
+    '+61': { min: 9,  max: 9,  placeholder: '412345678',   voorbeeld: '0412 345 678' },
+  };
+
+  function updateTelPlaceholder() {
+    const ln = document.getElementById('f-landnummer').value;
+    const regel = TEL_REGELS[ln];
+    if (regel) document.getElementById('f-telefoon').placeholder = regel.placeholder;
+    // Hervalideer als er al iets ingevuld is
+    valideerTelefoonLive();
+  }
+
+  // Extraheer alleen de lokale cijfers, strip onzichtbare tekens,
+  // opmaaktekens én het landnummer-prefix als de gebruiker dat mee heeft geplakt.
+  function telDigits(waarde, landnummer) {
+    // Verwijder onzichtbare Unicode-tekens (bijv. LTR/RTL-markeringen bij kopiëren)
+    let s = waarde.replace(/[​-‏‪-‮⁦-⁩﻿]/g, '');
+    // Alleen cijfers, spaties, koppeltekens, haakjes en + overhouden
+    s = s.replace(/[^\d\s\-()+]/g, '').trim();
+
+    // Als gebruiker het volledige nummer inclusief landcode heeft geplakt:
+    // "+49 11 75306560"  of  "0049 11 75306560"
+    const ln = (landnummer || '').replace('+', '');
+    if (ln) {
+      if (s.startsWith('+' + ln))       s = s.slice(1 + ln.length);
+      else if (s.startsWith('00' + ln)) s = s.slice(2 + ln.length);
+    }
+
+    // Houd alleen cijfers over voor telling
+    return s.replace(/\D/g, '');
+  }
+
+  function valideerTelefoon(nummer, landnummer) {
+    if (!nummer) return null;
+    const ln = landnummer || document.getElementById('f-landnummer').value;
+    const regel = TEL_REGELS[ln];
+    if (!regel) return null;
+    const digits = telDigits(nummer, ln);
+    if (digits.length === 0) return 'Ongeldig telefoonnummer.';
+    if (digits.length < regel.min || digits.length > regel.max) {
+      return regel.min === regel.max
+        ? `Lokaal nummer moet ${regel.min} cijfers zijn (bijv. ${regel.voorbeeld}).`
+        : `Lokaal nummer moet ${regel.min}–${regel.max} cijfers zijn (bijv. ${regel.voorbeeld}).`;
+    }
+    return null;
+  }
+
+  function valideerTelefoonLive() {
+    const nummer = veld('f-telefoon');
+    const teller = document.getElementById('tel-teller');
+    const inp    = document.getElementById('f-telefoon');
+    const err    = document.getElementById('e-telefoon');
+    const ln     = document.getElementById('f-landnummer').value;
+    const regel  = TEL_REGELS[ln];
+
+    if (!nummer) {
+      clearTelFout();
+      teller.className = 'tel-teller';
+      return;
+    }
+
+    const digits = telDigits(nummer, ln);
+    const n = digits.length;
+
+    // Teller bijwerken
+    if (regel) {
+      const doel = regel.min === regel.max ? `${regel.min}` : `${regel.min}–${regel.max}`;
+      teller.textContent = `${n} / ${doel}`;
+      const isGoed = n >= regel.min && n <= regel.max && /^\d+$/.test(digits);
+      teller.className = 'tel-teller zichtbaar ' + (isGoed ? 'goed' : 'fout');
+    }
+
+    const fout = valideerTelefoon(nummer);
+    if (fout) {
+      inp.classList.add('error');
+      err.textContent = fout;
+    } else {
+      inp.classList.remove('error');
+      err.textContent = '';
+    }
+  }
+
+  function clearTelFout() {
+    document.getElementById('f-telefoon').classList.remove('error');
+    document.getElementById('e-telefoon').textContent = '';
+    const teller = document.getElementById('tel-teller');
+    teller.className = 'tel-teller';
+  }
+
+  function updatePostcodePlaceholder() {
+    const land = document.getElementById('f-land').value;
+    // Sync landnummer dropdown mee
+    const ln = document.getElementById('f-landnummer');
+    if (LAND_NUMMER[land]) ln.value = LAND_NUMMER[land];
+    updateTelPlaceholder();
+
+    const inp = document.getElementById('f-postcode');
+    if (land === 'DE') {
+      inp.placeholder = '12345';
+      inp.maxLength = 5;
+    } else if (land === 'ID') {
+      inp.placeholder = '10110';
+      inp.maxLength = 5;
+    } else if (land === 'AU') {
+      inp.placeholder = '3220';
+      inp.maxLength = 4;
+    } else {
+      inp.placeholder = '1234 AB';
+      inp.maxLength = 10;
+    }
+
+    // Staat/provincie veld tonen per land
+    const staatGroep = document.getElementById('staat-groep');
+    const staatAu    = document.getElementById('f-staat-au');
+    const staatTekst = document.getElementById('f-staat-tekst');
+    const staatLabel = document.getElementById('staat-label');
+
+    if (land === 'AU') {
+      staatGroep.style.display = '';
+      staatLabel.textContent   = 'Staat / Territory';
+      staatAu.style.display    = '';
+      staatTekst.style.display = 'none';
+    } else if (land === 'ID') {
+      staatGroep.style.display = '';
+      staatLabel.textContent   = 'Provinsi';
+      staatAu.style.display    = 'none';
+      staatTekst.style.display = '';
+      staatTekst.placeholder   = 'bijv. Jawa Barat';
+    } else {
+      staatGroep.style.display = 'none';
+    }
+  }
+
+  function veld(id) { return document.getElementById(id).value.trim(); }
+
+  function valideer(data) {
+    let ok = true;
+    const regels = {
+      voornaam:   [data.voornaam,   'Voornaam is verplicht.'],
+      achternaam: [data.achternaam, 'Achternaam is verplicht.'],
+      adres:      [data.adres,      'Adres is verplicht.'],
+      postcode:   [data.postcode,   'Postcode is verplicht.'],
+      woonplaats: [data.woonplaats, 'Woonplaats is verplicht.'],
+    };
+
+    // Reset errors
+    for (const k of Object.keys(regels)) {
+      const el = document.getElementById('e-' + k);
+      if (el) el.textContent = '';
+      const inp = document.getElementById('f-' + k);
+      if (inp) inp.classList.remove('error');
+    }
+
+    for (const [k, [waarde, bericht]] of Object.entries(regels)) {
+      if (!waarde) {
+        document.getElementById('e-' + k).textContent = bericht;
+        document.getElementById('f-' + k).classList.add('error');
+        ok = false;
+      }
+    }
+
+    // Postcode validatie per land
+    if (data.postcode) {
+      const nlOk = /^\d{4}\s?[A-Z]{2}$/.test(data.postcode);
+      const deOk = /^\d{5}$/.test(data.postcode);
+      const idOk = /^\d{5}$/.test(data.postcode);
+      const auOk = /^\d{4}$/.test(data.postcode);
+      const fout = {
+        NL: [nlOk, 'Ongeldige postcode (bijv. 1234 AB)'],
+        DE: [deOk, 'Ungültige Postleitzahl (z.B. 12345)'],
+        ID: [idOk, 'Kode pos tidak valid (contoh: 10110)'],
+        AU: [auOk, 'Invalid postcode (e.g. 2000)'],
+      }[data.land] || [true, ''];
+      if (!fout[0]) {
+        document.getElementById('e-postcode').textContent = fout[1];
+        document.getElementById('f-postcode').classList.add('error');
+        ok = false;
+      }
+    }
+
+    // Staat verplicht voor AU en ID
+    const staatErr = document.getElementById('e-staat');
+    if (staatErr) staatErr.textContent = '';
+    if (data.land === 'AU' && !data.staat) {
+      if (staatErr) staatErr.textContent = 'Selecteer een staat of territory.';
+      ok = false;
+    } else if (data.land === 'ID' && !data.staat) {
+      if (staatErr) staatErr.textContent = 'Vul de provinsi in.';
+      ok = false;
+    }
+
+    // Telefoon optioneel, maar als ingevuld dan geldig formaat
+    const telFout = valideerTelefoon(data.telefoon, data.landnummer);
+    if (telFout) {
+      document.getElementById('e-telefoon').textContent = telFout;
+      document.getElementById('f-telefoon').classList.add('error');
+      ok = false;
+    } else {
+      clearTelFout();
+    }
+
+    return ok;
+  }
+
+  function savePersoon() {
+    const data = getVelden();
+    if (!valideer(data)) return;
+
+    const editId = document.getElementById('edit-id').value;
+
+    if (editId) {
+      const idx = personen.findIndex(p => p.id === editId);
+      if (idx !== -1) personen[idx] = { ...personen[idx], ...data };
+      toonToast('Persoon bijgewerkt', 'success');
+    } else {
+      data.id = crypto.randomUUID();
+      data.aangemaakt = new Date().toISOString();
+      personen.push(data);
+      toonToast('Persoon toegevoegd', 'success');
+    }
+
+    slaOpData();
+    resetForm();
+    renderTabel();
+  }
+
+  function bewerkPersoon(id) {
+    const p = personen.find(x => x.id === id);
+    if (!p) return;
+
+    vulTitelIn(p.titel || '');
+    // Categorie
+    const catSel = document.getElementById('f-categorie');
+    const vaste = ['','Familie','Vriend','Kennis','Collega','Bedrijf','Arts','Tandarts','Fysiotherapeut','Specialist','Apotheek'];
+    if (vaste.includes(p.categorie || '')) {
+      catSel.value = p.categorie || '';
+      document.getElementById('f-categorie-anders').style.display = 'none';
+    } else if (p.categorie) {
+      catSel.value = 'Anders';
+      document.getElementById('f-categorie-anders').style.display = '';
+      document.getElementById('f-categorie-anders').value = p.categorie;
+    } else {
+      catSel.value = '';
+    }
+    document.getElementById('f-bedrijf').value = p.bedrijf || '';
+    document.getElementById('f-voornaam').value      = p.voornaam || '';
+    document.getElementById('f-tussenvoegsel').value = p.tussenvoegsel || '';
+    document.getElementById('f-achternaam').value    = p.achternaam || '';
+    document.getElementById('f-adres').value         = p.adres || '';
+    document.getElementById('f-postcode').value      = p.postcode || '';
+    document.getElementById('f-woonplaats').value    = p.woonplaats || '';
+    document.getElementById('f-land').value          = p.land || 'NL';
+    document.getElementById('f-landnummer').value    = p.landnummer || LAND_NUMMER[p.land] || '+31';
+    updatePostcodePlaceholder(); // toon/verberg staatveld eerst
+    if (p.land === 'AU') document.getElementById('f-staat-au').value   = p.staat || '';
+    if (p.land === 'ID') document.getElementById('f-staat-tekst').value = p.staat || '';
+    document.getElementById('f-telefoon').value      = p.telefoon || '';
+    document.getElementById('f-email').value         = p.email || '';
+    vulDatumIn(p.geboortedatum || '');
+    document.getElementById('edit-id').value         = id;
+    updatePostcodePlaceholder();
+    document.getElementById('form-title').textContent = '✏️ Persoon bewerken';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function kopieerAdres(id) {
+    const p = personen.find(x => x.id === id);
+    if (!p) return;
+
+    // Adresgegevens overnemen
+    document.getElementById('f-adres').value      = p.adres || '';
+    document.getElementById('f-postcode').value   = p.postcode || '';
+    document.getElementById('f-woonplaats').value = p.woonplaats || '';
+    document.getElementById('f-land').value       = p.land || 'NL';
+    document.getElementById('f-landnummer').value = p.landnummer || LAND_NUMMER[p.land] || '+31';
+    updatePostcodePlaceholder();
+    if (p.land === 'AU') document.getElementById('f-staat-au').value    = p.staat || '';
+    if (p.land === 'ID') document.getElementById('f-staat-tekst').value = p.staat || '';
+
+    // Persoonsgegevens leegmaken
+    vulTitelIn('');
+    document.getElementById('f-voornaam').value      = '';
+    document.getElementById('f-tussenvoegsel').value = '';
+    document.getElementById('f-achternaam').value    = '';
+    document.getElementById('f-bedrijf').value       = '';
+    document.getElementById('f-telefoon').value      = '';
+    document.getElementById('f-email').value         = '';
+    vulDatumIn('');
+    document.getElementById('edit-id').value         = '';
+    document.getElementById('form-title').textContent = '➕ Nieuwe persoon (adres gekopieerd)';
+
+    toonToast('Adres gekopieerd — vul naam in en sla op');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+
+  function resetForm() {
+    document.getElementById('f-land').value = 'NL';
+    document.getElementById('f-landnummer').value = '+31';
+    document.getElementById('f-staat-au').value = '';
+    document.getElementById('f-staat-tekst').value = '';
+    document.getElementById('staat-groep').style.display = 'none';
+    document.getElementById('tel-teller').className = 'tel-teller';
+    leegDatum();
+    vulTitelIn('');
+    document.getElementById('f-categorie').value = '';
+    document.getElementById('f-categorie-anders').style.display = 'none';
+    document.getElementById('f-categorie-anders').value = '';
+    ['f-bedrijf','f-voornaam','f-tussenvoegsel','f-achternaam','f-adres','f-postcode',
+     'f-woonplaats','f-telefoon','f-email','edit-id']
+      .forEach(id => { document.getElementById(id).value = ''; });
+    ['e-voornaam','e-achternaam','e-adres','e-postcode','e-woonplaats']
+      .forEach(id => { document.getElementById(id).textContent = ''; });
+    ['f-voornaam','f-achternaam','f-adres','f-postcode','f-woonplaats']
+      .forEach(id => { document.getElementById(id).classList.remove('error'); });
+    document.getElementById('form-title').textContent = '✏️ Nieuwe persoon toevoegen';
+  }
+
+  // ───── VERWIJDEREN ─────
+  let pendingDeleteId = null;
+
+  function verwijderPersoon(id) {
+    const p = personen.find(x => x.id === id);
+    if (!p) return;
+    pendingDeleteId = id;
+    const naam = volledigeNaam(p);
+    document.getElementById('modal-titel').textContent = 'Persoon verwijderen';
+    document.getElementById('modal-tekst').textContent = `Wil je ${naam} definitief verwijderen?`;
+    document.getElementById('modal-bevestig-btn').onclick = () => {
+      personen = personen.filter(x => x.id !== pendingDeleteId);
+      slaOpData();
+      renderTabel();
+      sluitModal();
+      toonToast('Persoon verwijderd', 'success');
+    };
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function confirmAllesVerwijderen() {
+    if (personen.length === 0) { toonToast('Geen personen om te verwijderen', 'error'); return; }
+    document.getElementById('modal-titel').textContent = 'Alles verwijderen';
+    document.getElementById('modal-tekst').textContent = `Wil je alle ${personen.length} personen definitief verwijderen?`;
+    document.getElementById('modal-bevestig-btn').onclick = () => {
+      personen = [];
+      slaOpData();
+      renderTabel();
+      sluitModal();
+      toonToast('Alle personen verwijderd', 'success');
+    };
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function sluitModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+  // ───── TABEL RENDER ─────
+  function volledigeNaam(p) {
+    return [p.titel, p.voornaam, p.tussenvoegsel, p.achternaam].filter(Boolean).join(' ');
+  }
+
+  function formatDatum(d) {
+    if (!d) return '';
+    const [y, m, dd] = d.split('-');
+    return `${dd}-${m}-${y}`;
+  }
+
+  function leeftijd(geboortedatum) {
+    if (!geboortedatum) return '';
+    const geb = new Date(geboortedatum);
+    const nu = new Date();
+    let leeft = nu.getFullYear() - geb.getFullYear();
+    const m = nu.getMonth() - geb.getMonth();
+    if (m < 0 || (m === 0 && nu.getDate() < geb.getDate())) leeft--;
+    return ` (${leeft} jr)`;
+  }
+
+  function renderTabel() {
+    const zoek = document.getElementById('zoekterm').value.toLowerCase();
+    sortKolom = document.getElementById('sort-kolom').value;
+
+    let gefilterd = personen.filter(p => {
+      const tekst = [volledigeNaam(p), p.bedrijf, p.categorie, p.adres, p.postcode, p.woonplaats, p.land, p.telefoon, p.email]
+        .join(' ').toLowerCase();
+      return tekst.includes(zoek);
+    });
+
+    gefilterd.sort((a, b) => {
+      const va = (a[sortKolom] || '').toLowerCase();
+      const vb = (b[sortKolom] || '').toLowerCase();
+      if (va < vb) return -1 * sortDir;
+      if (va > vb) return 1 * sortDir;
+      return 0;
+    });
+
+    // Update sort icons
+    document.querySelectorAll('thead th').forEach(th => th.classList.remove('active'));
+
+    const tbody = document.getElementById('tabel-body');
+    if (gefilterd.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="${selectieModus ? 9 : 8}">
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <p>${personen.length === 0 ? 'Nog geen personen. Voeg de eerste toe via het formulier hierboven.' : 'Geen resultaten voor deze zoekopdracht.'}</p>
+        </div>
+      </td></tr>`;
+    } else {
+      tbody.innerHTML = gefilterd.map(p => `
+        <tr>
+          ${selectieModus ? `<td class="cb-col"><input type="checkbox" class="rij-cb" data-id="${p.id}" onchange="updateSelectieTeller()"></td>` : ''}
+          <td>
+            ${p.categorie ? `<span style="font-size:0.72rem;font-weight:700;background:#e0e7ff;color:#3730a3;border-radius:999px;padding:1px 8px;margin-right:5px;">${p.categorie}</span>` : ''}
+            <strong>${volledigeNaam(p)}</strong>
+            ${p.bedrijf ? `<br><span style="font-size:0.82rem;color:var(--muted);">🏢 ${p.bedrijf}</span>` : ''}
+          </td>
+          <td>${p.adres || ''}</td>
+          <td>${[p.postcode, p.woonplaats, p.staat].filter(Boolean).join(' ')}</td>
+          <td>${{'NL':'🇳🇱 NL','DE':'🇩🇪 DE','ID':'🇮🇩 ID','AU':'🇦🇺 AU'}[p.land] || p.land || '🇳🇱 NL'}</td>
+          <td>${p.telefoon ? (() => { const vol = (p.landnummer||'') + ' ' + p.telefoon; return `<a href="tel:${vol.replace(/\s/g,'')}" style="color:var(--primary);text-decoration:none;">${vol}</a>`; })() : '<span style="color:#94a3b8">—</span>'}</td>
+          <td>${p.email ? `<a href="mailto:${p.email}" style="color:var(--primary);text-decoration:none;">${p.email}</a>` : '<span style="color:#94a3b8">—</span>'}</td>
+          <td>${p.geboortedatum ? formatDatum(p.geboortedatum) + '<small style="color:var(--muted)">' + leeftijd(p.geboortedatum) + '</small>' : '<span style="color:#94a3b8">—</span>'}</td>
+          <td class="actions">
+            <button class="btn-primary btn-sm" onclick="bewerkPersoon('${p.id}')">✏️ Bewerk</button>
+            <button class="btn-outline btn-sm" onclick="kopieerAdres('${p.id}')" title="Zelfde adres, nieuwe persoon">📋 Adres</button>
+            <button class="btn-danger btn-sm" onclick="verwijderPersoon('${p.id}')">🗑</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    const n = personen.length;
+    document.getElementById('count-badge').textContent = n + (n === 1 ? ' persoon' : ' personen');
+  }
+
+  // ───── SORTEREN ─────
+  function setSort(kolom) {
+    if (sortKolom === kolom) {
+      sortDir *= -1;
+    } else {
+      sortKolom = kolom;
+      sortDir = 1;
+      document.getElementById('sort-kolom').value = kolom;
+    }
+    document.getElementById('sort-icon').textContent = sortDir === 1 ? '↑' : '↓';
+    renderTabel();
+  }
+
+  function toggleSortDir() {
+    sortDir *= -1;
+    document.getElementById('sort-icon').textContent = sortDir === 1 ? '↑' : '↓';
+    renderTabel();
+  }
+
+  // ───── EXPORT CSV ─────
+  function exportCSV() {
+    if (personen.length === 0) { toonToast('Geen personen om te exporteren', 'error'); return; }
+    const headers = ['titel','categorie','bedrijf','voornaam','tussenvoegsel','achternaam','adres','postcode','woonplaats','staat','land','landnummer','telefoon','email','geboortedatum'];
+    const rijen = [
+      headers.join(';'),
+      ...personen.map(p => headers.map(h => `"${(p[h] || '').replace(/"/g, '""')}"`).join(';'))
+    ];
+    const blob = new Blob(['﻿' + rijen.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'naw_database_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    toonToast(`${personen.length} personen geëxporteerd`, 'success');
+  }
+
+  // ───── IMPORT CSV ─────
+  function openImport() { document.getElementById('import-modal').classList.add('open'); }
+  function sluitImport() { document.getElementById('import-modal').classList.remove('open'); }
+
+  function importCSV() {
+    const file = document.getElementById('csv-file').files[0];
+    if (!file) { toonToast('Selecteer eerst een bestand', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const tekst = e.target.result.replace(/^﻿/, '');
+      const regels = tekst.split('\n').map(r => r.trim()).filter(Boolean);
+      if (regels.length < 2) { toonToast('CSV bevat geen data', 'error'); return; }
+      const headers = regels[0].split(';').map(h => h.replace(/"/g,'').toLowerCase().trim());
+      let toegevoegd = 0;
+      for (let i = 1; i < regels.length; i++) {
+        const cellen = regels[i].split(';').map(c => c.replace(/^"|"$/g,'').replace(/""/g,'"').trim());
+        const p = { id: crypto.randomUUID(), aangemaakt: new Date().toISOString() };
+        headers.forEach((h, idx) => { p[h] = cellen[idx] || ''; });
+        if (!p.land || !['NL','DE','ID','AU'].includes(p.land)) p.land = 'NL';
+        if (p.voornaam && p.achternaam) { personen.push(p); toegevoegd++; }
+      }
+      slaOpData();
+      renderTabel();
+      sluitImport();
+      toonToast(`${toegevoegd} personen geïmporteerd`, 'success');
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  // ───── SELECTIE & LABELS ─────
+  let selectieModus = false;
+
+  function toggleSelectieModus() {
+    selectieModus = !selectieModus;
+    document.getElementById('btn-selectie').textContent = selectieModus ? '✖ Stoppen' : '☑ Selecteren';
+    document.getElementById('selectie-bar').classList.toggle('zichtbaar', selectieModus);
+    document.getElementById('th-cb').style.display = selectieModus ? '' : 'none';
+    renderTabel();
+    updateSelectieTeller();
+  }
+
+  function toggleAllesCb(cb) {
+    document.querySelectorAll('.rij-cb').forEach(c => c.checked = cb.checked);
+    updateSelectieTeller();
+  }
+
+  function selecteerAlle() {
+    document.querySelectorAll('.rij-cb').forEach(c => c.checked = true);
+    document.getElementById('cb-alles').checked = true;
+    updateSelectieTeller();
+  }
+
+  function deselecteerAlle() {
+    document.querySelectorAll('.rij-cb').forEach(c => c.checked = false);
+    document.getElementById('cb-alles').checked = false;
+    updateSelectieTeller();
+  }
+
+  function updateSelectieTeller() {
+    const n = document.querySelectorAll('.rij-cb:checked').length;
+    document.getElementById('selectie-teller').textContent =
+      n === 0 ? 'Geen geselecteerd' : `${n} geselecteerd`;
+  }
+
+  function geselecteerdePersonen() {
+    const ids = [...document.querySelectorAll('.rij-cb:checked')].map(c => c.dataset.id);
+    return personen.filter(p => ids.includes(p.id));
+  }
+
+  // ───── LABEL STATE ─────
+  let labelKolommen = 2;
+  let labelRijen = 7;
+  let labelStartPositie = 0;
+  let labelSelectie = [];
+
+  const LABEL_VLAG = { NL: '🇳🇱', DE: '🇩🇪', ID: '🇮🇩', AU: '🇦🇺' };
+  const LABEL_LANDNAAM = { NL: 'NIEDERLANDE', DE: '', ID: 'INDONESIEN', AU: 'AUSTRALIEN' };
+
+  function labelItemHTML(p) {
+    const naam = volledigeNaam(p);
+    const stad = [p.postcode, p.woonplaats, p.staat].filter(Boolean).join(' ');
+    const effectiefLand = p.land || 'NL';
+    const landScherm = `${LABEL_VLAG[effectiefLand] || ''} ${effectiefLand}`;
+    const landPrint = LABEL_LANDNAAM[effectiefLand] ?? effectiefLand;
+    return `<div class="label-item">
+      <div class="label-naam">${naam}</div>
+      ${p.bedrijf ? `<div class="label-sub">${p.bedrijf}</div>` : ''}
+      <div>${p.adres || ''}</div>
+      <div>${stad}</div>
+      <div class="label-land-scherm">${landScherm}</div>
+      ${landPrint ? `<div class="label-land-print">${landPrint}</div>` : ''}
+    </div>`;
+  }
+
+  function renderLabelGrid() {
+    const grid = document.getElementById('label-grid');
+    const kolomCss = `repeat(${labelKolommen}, 1fr)`;
+    grid.style.gridTemplateColumns = kolomCss;
+    const leeg = Array.from({ length: labelStartPositie },
+      () => `<div class="label-item label-leeg"></div>`).join('');
+    grid.innerHTML = leeg + labelSelectie.map(labelItemHTML).join('');
+    document.getElementById('label-meta').textContent =
+      `${labelSelectie.length} etiket${labelSelectie.length !== 1 ? 'ten' : ''}` +
+      (labelStartPositie > 0 ? ` · start op positie ${labelStartPositie + 1}` : '');
+  }
+
+  function renderPositiePicker() {
+    const picker = document.getElementById('positie-picker');
+    picker.style.gridTemplateColumns = `repeat(${labelKolommen}, 22px)`;
+    const totaal = labelKolommen * labelRijen;
+    picker.innerHTML = Array.from({ length: totaal }, (_, i) => {
+      const cls = i < labelStartPositie ? 'gebruikt' : i === labelStartPositie ? 'geselecteerd' : '';
+      return `<div class="positie-cel ${cls}" onclick="setStartPositie(${i})" title="Positie ${i + 1}"></div>`;
+    }).join('');
+  }
+
+  function setStartPositie(pos) {
+    labelStartPositie = pos;
+    renderPositiePicker();
+    renderLabelGrid();
+  }
+
+  function pasLabelFormaatAan() {
+    const preset = document.getElementById('label-preset').value;
+    const aangepast = document.getElementById('label-aangepast-velden');
+    if (preset === 'aangepast') {
+      aangepast.style.display = 'inline-flex';
+      labelKolommen = parseInt(document.getElementById('label-kol').value) || 2;
+      labelRijen = parseInt(document.getElementById('label-rij').value) || 7;
+    } else {
+      aangepast.style.display = 'none';
+      const [k, r] = preset.split('x').map(Number);
+      labelKolommen = k; labelRijen = r;
+    }
+    labelStartPositie = 0;
+    renderPositiePicker();
+    renderLabelGrid();
+  }
+
+  function printLabels() {
+    labelSelectie = geselecteerdePersonen();
+    if (labelSelectie.length === 0) { toonToast('Selecteer eerst personen', 'error'); return; }
+    labelStartPositie = 0;
+    renderPositiePicker();
+    renderLabelGrid();
+    document.getElementById('label-venster').classList.add('open');
+  }
+
+  function printLabelsNu() {
+    const grid = document.getElementById('label-grid');
+    grid.style.gridTemplateColumns = `repeat(${labelKolommen}, 1fr)`;
+    document.body.classList.add('print-labels');
+    window.print();
+    document.body.classList.remove('print-labels');
+  }
+
+  function sluitLabels() {
+    document.getElementById('label-venster').classList.remove('open');
+  }
+
+  document.getElementById('label-venster').addEventListener('click', e => {
+    if (e.target === e.currentTarget) sluitLabels();
+  });
+
+  // ───── AFDRUKKEN ─────
+  function drukAf() {
+    const zoek = document.getElementById('zoekterm').value.toLowerCase();
+    let lijst = personen.filter(p => {
+      const tekst = [volledigeNaam(p), p.bedrijf, p.categorie, p.adres, p.postcode, p.woonplaats]
+        .join(' ').toLowerCase();
+      return tekst.includes(zoek);
+    });
+    lijst.sort((a, b) => (a.achternaam || '').localeCompare(b.achternaam || '', 'nl'));
+
+    const vlag = { NL: '🇳🇱', DE: '🇩🇪', ID: '🇮🇩', AU: '🇦🇺' };
+    const datum = new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+    document.getElementById('print-meta').textContent =
+      `${lijst.length} personen · Afgedrukt op ${datum}` +
+      (zoek ? ` · Filter: "${zoek}"` : '');
+
+    document.getElementById('print-tbody').innerHTML = lijst.map(p => `
+      <tr>
+        <td>
+          <strong>${volledigeNaam(p)}</strong>
+          ${p.categorie ? `<br><span class="print-cat-badge">${p.categorie}</span>` : ''}
+          ${p.bedrijf ? `<br><span style="font-size:0.78rem;color:#64748b;">${p.bedrijf}</span>` : ''}
+        </td>
+        <td>
+          ${p.adres || ''}<br>
+          <span style="white-space:nowrap;">${p.postcode || ''} ${p.woonplaats || ''}${p.staat ? ', ' + p.staat : ''}</span>
+        </td>
+        <td style="white-space:nowrap;">${p.telefoon ? (p.landnummer || '') + ' ' + p.telefoon : ''}</td>
+        <td style="word-break:break-all;font-size:0.78rem;">${p.email || ''}</td>
+        <td style="white-space:nowrap;">${p.geboortedatum ? formatDatum(p.geboortedatum) : ''}</td>
+        <td style="white-space:nowrap;">${(vlag[p.land || 'NL'] || '')} ${p.land || 'NL'}</td>
+      </tr>
+    `).join('');
+
+    document.getElementById('print-venster').classList.add('open');
+  }
+
+  function sluitPrint() {
+    document.getElementById('print-venster').classList.remove('open');
+  }
+
+  function printTabel() {
+    document.body.classList.add('print-tabel');
+    window.print();
+    document.body.classList.remove('print-tabel');
+  }
+
+  document.getElementById('print-venster').addEventListener('click', e => {
+    if (e.target === e.currentTarget) sluitPrint();
+  });
+
+  // ───── TOAST ─────
+  let toastTimer;
+  function toonToast(bericht, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = bericht;
+    el.className = 'show ' + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+  }
+
+  // ───── INIT ─────
+  laadData();
+  renderTabel();
+  updateTelPlaceholder();
+
+  // Sluit modals bij klik buiten
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) sluitModal();
+  });
+  document.getElementById('import-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) sluitImport();
+  });
+
+  // Enter in form = opslaan
+  document.querySelectorAll('.form-grid input').forEach(inp => {
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') savePersoon(); });
+  });
+</script>
+</body>
+</html>
