@@ -628,10 +628,12 @@
       }
       body.print-labels .label-item {
         border: 0.5pt solid #aaa !important; border-radius: 0 !important;
-        padding: 5mm 6mm !important; font-size: 9pt !important; min-height: 28mm !important;
+        padding: 5mm 6mm !important; font-size: 10pt !important; min-height: 28mm !important;
         page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        color: #000000 !important;
       }
-      body.print-labels .label-item .label-naam { font-size: 10pt !important; }
+      body.print-labels .label-item * { color: #000000 !important; }
+      body.print-labels .label-item .label-naam { font-size: 11pt !important; font-weight: 700 !important; }
       body.print-labels .label-land-scherm { display: none !important; }
       body.print-labels .label-land-print { display: block !important; font-weight: 700; letter-spacing: 0.04em; }
       body.print-labels .label-qr { display: none !important; }
@@ -727,16 +729,16 @@
       </div>
       <div class="form-group">
         <label>Voornaam</label>
-        <input type="text" id="f-voornaam" placeholder="Jan" />
+        <input type="text" id="f-voornaam" placeholder="Krakkie" />
         <span class="error-msg" id="e-voornaam"></span>
       </div>
       <div class="form-group">
         <label>Tussenvoegsel <span class="optional">(optioneel)</span></label>
-        <input type="text" id="f-tussenvoegsel" placeholder="van de" />
+        <input type="text" id="f-tussenvoegsel" placeholder="von" />
       </div>
       <div class="form-group">
         <label>Achternaam</label>
-        <input type="text" id="f-achternaam" placeholder="Vries" />
+        <input type="text" id="f-achternaam" placeholder="Bakkie" />
         <span class="error-msg" id="e-achternaam"></span>
       </div>
       <div class="form-group">
@@ -903,7 +905,7 @@
       <button class="btn-outline btn-sm" onclick="toggleKaartKolom()" id="btn-kaart">📍 Kaart</button>
       <button class="btn-outline btn-sm" onclick="toggleAangemaakt()" id="btn-aangemaakt" style="opacity:0.45;">📅 Aangemaakt</button>
       <button class="btn-outline btn-sm" onclick="toggleFavorietenFilter()" id="btn-favorieten">☆ Favorieten</button>
-      <button class="btn-outline btn-sm" onclick="toggleKerstFilter()" id="btn-kerst">🎄 Kerstkaart</button>
+
       <button class="btn-outline btn-sm" onclick="toggleSelectieModus()" id="btn-selectie">☑ Selecteren</button>
       <button class="btn-outline btn-sm" onclick="exporteerVCard()" title="Exporteer als vCard (.vcf)">📲 vCard</button>
       <button class="btn-danger btn-sm" onclick="confirmAllesVerwijderen()" title="Alles verwijderen">🗑 Alles</button>
@@ -1173,10 +1175,10 @@
       lijst.innerHTML = komende.map(({ p, verjaardag, dagenTot, leeft }) => {
         const dag = verjaardag.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
         const wanneer = dagenTot === 0 ? '🎉 Vandaag!' : dagenTot === 1 ? 'Morgen' : `Over ${dagenTot} dagen`;
-        return `<div style="display:flex;gap:12px;padding:4px 0;border-bottom:1px solid #bbf7d0;">
-          <span style="width:110px;color:#166534;font-weight:600;">${wanneer}</span>
-          <span style="flex:1;">${volledigeNaam(p)}</span>
-          <span style="color:var(--muted);">${dag} (${leeft} jaar)</span>
+        return `<div style="display:flex;gap:12px;padding:6px 0;border-bottom:1px solid #bbf7d0;align-items:baseline;">
+          <span style="width:120px;color:#166534;font-weight:600;flex-shrink:0;">${wanneer}</span>
+          <span style="flex:1;color:#1e293b;font-weight:500;">${volledigeNaam(p)}</span>
+          <span style="color:#4b5563;font-size:0.82rem;white-space:nowrap;">${dag} (${leeft} jaar)</span>
         </div>`;
       }).join('');
     }
@@ -1796,7 +1798,7 @@
       if (!tekst.includes(zoek)) return false;
       if (catFilter && p.categorie !== catFilter) return false;
       if (alleenFavorieten && !p.favoriet) return false;
-      if (alleenKerst && !p.kerstkaart) return false;
+
       return true;
     });
 
@@ -1844,7 +1846,7 @@
           <td class="td-aangemaakt" style="display:${aangemaaktZichtbaar ? '' : 'none'};font-size:0.78rem;color:var(--muted);">${p.aangemaakt ? new Date(p.aangemaakt).toLocaleDateString('nl-NL') : '—'}</td>
           <td class="actions">
             <button class="btn-outline btn-sm" onclick="toggleFavoriet('${p.id}')" title="${p.favoriet ? 'Verwijder uit favorieten' : 'Markeer als favoriet'}" style="font-size:1rem;padding:2px 6px;">${p.favoriet ? '⭐' : '☆'}</button>
-            <button class="btn-outline btn-sm" onclick="toggleKerst('${p.id}')" title="${p.kerstkaart ? 'Geen kerstkaart' : 'Kerstkaart sturen'}" style="font-size:1rem;padding:2px 6px;">${p.kerstkaart ? '🎄' : '🌲'}</button>
+
             <button class="btn-primary btn-sm" onclick="bewerkPersoon('${p.id}')">✏️ Bewerk</button>
             <button class="btn-outline btn-sm" onclick="kopieerAdres('${p.id}')" title="Zelfde adres, nieuwe persoon">📋 Adres</button>
             <button class="btn-outline btn-sm" onclick="toonQR('${p.id}')" title="vCard QR-code">📱 QR</button>
@@ -1947,21 +1949,7 @@
   }
 
   let alleenFavorieten = false;
-  let alleenKerst = false;
-  function toggleKerst(id) {
-    const p = personen.find(x => x.id === id);
-    if (!p) return;
-    p.kerstkaart = !p.kerstkaart;
-    slaOpData();
-    renderTabel();
-  }
-  function toggleKerstFilter() {
-    alleenKerst = !alleenKerst;
-    const btn = document.getElementById('btn-kerst');
-    btn.textContent = alleenKerst ? '🎄 Kerstlijst' : '🎄 Kerstkaart';
-    btn.style.opacity = alleenKerst ? '1' : '0.7';
-    renderTabel();
-  }
+
   function toggleFavoriet(id) {
     const p = personen.find(x => x.id === id);
     if (!p) return;
