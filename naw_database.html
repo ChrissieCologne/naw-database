@@ -618,6 +618,8 @@
       body.print-labels .label-item .label-naam { font-size: 10pt !important; }
       body.print-labels .label-land-scherm { display: none !important; }
       body.print-labels .label-land-print { display: block !important; font-weight: 700; letter-spacing: 0.04em; }
+      body.print-labels .label-qr { display: none !important; }
+      body.print-labels .label-tekst { flex: 1 !important; }
     }
     .label-land-print { display: none; }
     .label-leeg { border-style: dashed; opacity: 0.3; pointer-events: none; }
@@ -645,6 +647,8 @@
     <div class="header-right">
       <span class="badge" id="count-badge">0 personen</span>
       <span id="opslag-status" style="font-size:0.78rem;color:var(--muted);"></span>
+      <button class="btn-primary btn-sm" onclick="maakBackup()" title="Backup maken als JSON-bestand">💾 Backup</button>
+      <button class="btn-outline btn-sm" onclick="herstelBackup()" title="Backup terugzetten">↩ Herstel</button>
       <button class="btn-success btn-sm" onclick="exportJSON()" title="Exporteer als JSON — te importeren in andere browser">⬇ JSON</button>
       <button class="btn-outline btn-sm" onclick="importJSON()" title="Importeer JSON uit andere browser">⬆ JSON</button>
       <button class="btn-outline btn-sm" onclick="drukAf()">🖨️ Afdrukken</button>
@@ -652,6 +656,14 @@
       <button class="btn-outline btn-sm" onclick="openImport()">⬆ CSV</button>
     </div>
   </header>
+
+  <!-- BACKUP BANNER -->
+  <div id="backup-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span style="font-size:1.1rem;">⚠️</span>
+    <span id="backup-banner-tekst" style="flex:1;font-size:0.88rem;color:#92400e;"></span>
+    <button class="btn-primary btn-sm" onclick="maakBackup()">💾 Nu backuppen</button>
+    <button class="btn-outline btn-sm" onclick="sluitBackupBanner()" style="font-size:0.8rem;">Later</button>
+  </div>
 
   <!-- FORMULIER -->
   <div class="card">
@@ -718,6 +730,7 @@
           <option value="Kennis">👤 Kennis</option>
           <option value="Collega">💼 Collega</option>
           <option value="Bedrijf">🏢 Bedrijf</option>
+          <option value="Overheid">🏛 Overheid</option>
           <option value="Arts">🩺 Arts</option>
           <option value="Tandarts">🦷 Tandarts</option>
           <option value="Fysiotherapeut">🏃 Fysiotherapeut</option>
@@ -846,7 +859,11 @@
       <button class="btn-outline btn-sm" onclick="toggleSortDir()">
         <span id="sort-icon">↑↓</span>
       </button>
+      <button class="btn-outline btn-sm" onclick="toggleCategorieBadges()" id="btn-categorie">🏷 Categorie</button>
+      <button class="btn-outline btn-sm" onclick="toggleBedrijfZichtbaar()" id="btn-bedrijf">🏢 Bedrijf</button>
+      <button class="btn-outline btn-sm" onclick="toggleKaartKolom()" id="btn-kaart">📍 Kaart</button>
       <button class="btn-outline btn-sm" onclick="toggleSelectieModus()" id="btn-selectie">☑ Selecteren</button>
+      <button class="btn-outline btn-sm" onclick="exporteerVCard()" title="Exporteer als vCard (.vcf)">📲 vCard</button>
       <button class="btn-danger btn-sm" onclick="confirmAllesVerwijderen()" title="Alles verwijderen">🗑 Alles</button>
     </div>
   </div>
@@ -867,6 +884,7 @@
           <tr>
             <th class="cb-col" id="th-cb" style="display:none;"><input type="checkbox" id="cb-alles" onchange="toggleAllesCb(this)" title="Alles"></th>
             <th onclick="setSort('achternaam')">Naam <span class="sort-icon">↕</span></th>
+            <th id="th-kaart" style="width:36px;text-align:center;">📍</th>
             <th onclick="setSort('adres')">Adres <span class="sort-icon">↕</span></th>
             <th onclick="setSort('woonplaats')">Postcode / Woonplaats <span class="sort-icon">↕</span></th>
             <th onclick="setSort('land')">Land <span class="sort-icon">↕</span></th>
@@ -1023,6 +1041,68 @@
     try {
       personen = JSON.parse(localStorage.getItem(OPSLAG_KEY)) || [];
     } catch { personen = []; }
+  }
+
+  // ── BACKUP SYSTEEM ──
+  const BACKUP_KEY = 'naw_laatste_backup';
+  const BACKUP_DAGEN = 7;
+
+  function maakBackup() {
+    if (personen.length === 0) { toonToast('Geen personen om te backuppen.', 'error'); return; }
+    const json = JSON.stringify(personen, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `naw_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    localStorage.setItem(BACKUP_KEY, new Date().toISOString());
+    sluitBackupBanner();
+    toonToast(`Backup gemaakt: ${personen.length} personen`, 'success');
+  }
+
+  function herstelBackup() {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.json';
+    inp.onchange = async () => {
+      const file = inp.files[0];
+      if (!file) return;
+      try {
+        const tekst = await file.text();
+        const data = JSON.parse(tekst);
+        if (!Array.isArray(data)) throw new Error();
+        if (!confirm(`Backup terugzetten: ${data.length} personen laden?\n\nJe huidige ${personen.length} personen worden vervangen.`)) return;
+        personen = data;
+        slaOpData();
+        renderTabel();
+        toonToast(`${personen.length} personen teruggezet uit backup`, 'success');
+      } catch {
+        toonToast('Ongeldig backup-bestand', 'error');
+      }
+    };
+    inp.click();
+  }
+
+  function checkBackupReminder() {
+    const laatste = localStorage.getItem(BACKUP_KEY);
+    if (!laatste && personen.length === 0) return;
+    const banner = document.getElementById('backup-banner');
+    const tekst = document.getElementById('backup-banner-tekst');
+    if (!laatste) {
+      banner.style.display = 'flex';
+      tekst.textContent = 'Je hebt nog nooit een backup gemaakt. Aanbevolen: sla een backup op je computer op.';
+      return;
+    }
+    const dagenGeleden = Math.floor((Date.now() - new Date(laatste)) / 86400000);
+    if (dagenGeleden >= BACKUP_DAGEN) {
+      banner.style.display = 'flex';
+      tekst.textContent = `Laatste backup was ${dagenGeleden} dag${dagenGeleden !== 1 ? 'en' : ''} geleden. Maak een nieuwe backup.`;
+    }
+  }
+
+  function sluitBackupBanner() {
+    document.getElementById('backup-banner').style.display = 'none';
   }
 
   // ── JSON export (voor cross-browser overdracht) ──
@@ -1443,7 +1523,7 @@
     vulTitelIn(p.titel || '');
     // Categorie
     const catSel = document.getElementById('f-categorie');
-    const vaste = ['','Familie','Vriend','Kennis','Collega','Bedrijf','Arts','Tandarts','Fysiotherapeut','Specialist','Apotheek'];
+    const vaste = ['','Familie','Vriend','Kennis','Collega','Bedrijf','Overheid','Arts','Tandarts','Fysiotherapeut','Specialist','Apotheek'];
     if (vaste.includes(p.categorie || '')) {
       catSel.value = p.categorie || '';
       document.getElementById('f-categorie-anders').style.display = 'none';
@@ -1609,8 +1689,9 @@
     });
 
     gefilterd.sort((a, b) => {
-      const va = (a[sortKolom] || '').toLowerCase();
-      const vb = (b[sortKolom] || '').toLowerCase();
+      const sortVal = (p) => (p[sortKolom] || p.bedrijf || '').toLowerCase();
+      const va = sortVal(a);
+      const vb = sortVal(b);
       if (va < vb) return -1 * sortDir;
       if (va > vb) return 1 * sortDir;
       return 0;
@@ -1632,10 +1713,15 @@
         <tr>
           ${selectieModus ? `<td class="cb-col"><input type="checkbox" class="rij-cb" data-id="${p.id}" onchange="updateSelectieTeller()"></td>` : ''}
           <td>
-            ${p.categorie ? `<span style="font-size:0.72rem;font-weight:700;background:#e0e7ff;color:#3730a3;border-radius:999px;padding:1px 8px;margin-right:5px;">${p.categorie}</span>` : ''}
-            <strong>${volledigeNaam(p)}</strong>
-            ${p.bedrijf ? `<br><span style="font-size:0.82rem;color:var(--muted);">🏢 ${p.bedrijf}</span>` : ''}
+            ${p.categorie ? `<span class="rij-cat-badge" style="font-size:0.72rem;font-weight:700;background:#e0e7ff;color:#3730a3;border-radius:999px;padding:1px 8px;margin-right:5px;display:${categorieBadgesZichtbaar ? '' : 'none'};">${p.categorie}</span>` : ''}
+            ${(() => {
+              const persNaam = [p.titel, p.voornaam, p.tussenvoegsel, p.achternaam].filter(Boolean).join(' ');
+              const alsBedrijf = !persNaam && !!p.bedrijf;
+              return (persNaam ? `<strong>${persNaam}</strong>` : '') +
+                (p.bedrijf ? `<span class="rij-bedrijf" style="display:${(bedrijfZichtbaar || alsBedrijf) ? 'block' : 'none'};font-size:${alsBedrijf ? '1rem' : '0.82rem'};font-weight:${alsBedrijf ? '700' : 'normal'};color:${alsBedrijf ? 'inherit' : 'var(--muted)'};">🏢 ${p.bedrijf}</span>` : '');
+            })()}
           </td>
+          <td id="td-kaart-${p.id}" class="td-kaart" style="text-align:center;display:${kaartKolomZichtbaar ? '' : 'none'};">${p.adres ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([p.adres, p.postcode, p.woonplaats, p.land||'DE'].filter(Boolean).join(' '))}" target="_blank" title="Toon op kaart" style="text-decoration:none;font-size:1.1rem;">📍</a>` : ''}</td>
           <td>${p.adres || ''}</td>
           <td>${[p.postcode, p.woonplaats, p.staat].filter(Boolean).join(' ')}</td>
           <td>${{'NL':'🇳🇱 NL','DE':'🇩🇪 DE','ID':'🇮🇩 ID','AU':'🇦🇺 AU'}[p.land] || p.land || '🇳🇱 NL'}</td>
@@ -1723,6 +1809,31 @@
   // ───── SELECTIE & LABELS ─────
   let selectieModus = false;
 
+  let bedrijfZichtbaar = true;
+  function toggleBedrijfZichtbaar() {
+    bedrijfZichtbaar = !bedrijfZichtbaar;
+    document.getElementById('btn-bedrijf').style.opacity = bedrijfZichtbaar ? '1' : '0.45';
+    document.querySelectorAll('.rij-bedrijf').forEach(el => el.style.display = bedrijfZichtbaar ? '' : 'none');
+  }
+
+  let kaartKolomZichtbaar = false;
+  function toggleKaartKolom() {
+    kaartKolomZichtbaar = !kaartKolomZichtbaar;
+    document.getElementById('btn-kaart').style.opacity = kaartKolomZichtbaar ? '1' : '0.45';
+    document.getElementById('th-kaart').style.display = kaartKolomZichtbaar ? '' : 'none';
+    document.querySelectorAll('.td-kaart').forEach(el => el.style.display = kaartKolomZichtbaar ? '' : 'none');
+  }
+
+  let categorieBadgesZichtbaar = false;
+  function toggleCategorieBadges() {
+    categorieBadgesZichtbaar = !categorieBadgesZichtbaar;
+    const btn = document.getElementById('btn-categorie');
+    btn.style.opacity = categorieBadgesZichtbaar ? '1' : '0.45';
+    document.querySelectorAll('.rij-cat-badge').forEach(el => {
+      el.style.display = categorieBadgesZichtbaar ? '' : 'none';
+    });
+  }
+
   function toggleSelectieModus() {
     selectieModus = !selectieModus;
     document.getElementById('btn-selectie').textContent = selectieModus ? '✖ Stoppen' : '☑ Selecteren';
@@ -1778,7 +1889,7 @@
     return `<div class="label-item">
       <div class="label-tekst">
         <div class="label-naam">${naam}</div>
-        ${p.bedrijf ? `<div class="label-sub">${p.bedrijf}</div>` : ''}
+        ${p.bedrijf && (p.voornaam || p.achternaam) ? `<div class="label-sub">${p.bedrijf}</div>` : ''}
         <div>${p.adres || ''}</div>
         <div>${stad}</div>
         <div class="label-land-scherm">${landScherm}</div>
@@ -1888,6 +1999,20 @@
     return lines;
   }
 
+  function exporteerVCard() {
+    const lijst = labelSelectie.length > 0 ? labelSelectie : personen;
+    if (lijst.length === 0) { toonToast('Geen contacten om te exporteren.', 'error'); return; }
+    const inhoud = lijst.map(maakVCard).join('\n\n');
+    const blob = new Blob([inhoud], { type: 'text/vcard;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `naw-export-${new Date().toISOString().slice(0,10)}.vcf`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toonToast(`${lijst.length} contact${lijst.length !== 1 ? 'en' : ''} geëxporteerd als .vcf`, 'success');
+  }
+
   function maakQRSvg(tekst, px) {
     qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
     const qr = qrcode(0, 'M');
@@ -1979,6 +2104,10 @@
   // ───── INIT ─────
   laadData();
   renderTabel();
+  checkBackupReminder();
+  document.getElementById('btn-categorie').style.opacity = '0.45';
+  document.getElementById('btn-kaart').style.opacity = '0.45';
+  document.getElementById('th-kaart').style.display = 'none';
   updateTelPlaceholder();
 
   // Sluit modals bij klik buiten
