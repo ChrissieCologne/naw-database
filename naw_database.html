@@ -21,6 +21,22 @@
       --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
       --shadow-lg: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
     }
+    body.dark {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --input-bg: #0f172a;
+      --shadow: 0 1px 3px rgba(0,0,0,0.4);
+      --shadow-lg: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    body.dark thead th { background: #1e293b; }
+    body.dark tbody tr:hover { background: #334155; }
+    body.dark .btn-outline { background: #1e293b; color: var(--text); }
+    body.dark .btn-outline:hover { background: #334155; }
+    body.dark input, body.dark select, body.dark textarea { background: #0f172a; color: var(--text); border-color: var(--border); }
+    body.dark .search-bar { background: #1e293b; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -654,6 +670,8 @@
       <button class="btn-outline btn-sm" onclick="drukAf()">🖨️ Afdrukken</button>
       <button class="btn-success btn-sm" onclick="exportCSV()">⬇ CSV</button>
       <button class="btn-outline btn-sm" onclick="openImport()">⬆ CSV</button>
+      <button class="btn-outline btn-sm" onclick="toonVerjaardagen()">🎂 Verjaardagen</button>
+      <button class="btn-outline btn-sm" onclick="toggleDarkMode()" id="btn-dark">🌙</button>
     </div>
   </header>
 
@@ -667,7 +685,7 @@
 
   <!-- FORMULIER -->
   <div class="card">
-    <div class="card-title" id="form-title">✏️ Nieuwe persoon toevoegen</div>
+    <div class="card-title" id="form-title">✏️ Nieuwe entry toevoegen</div>
     <div class="form-grid">
       <div class="form-group">
         <label>Titel <span class="optional">(optioneel)</span></label>
@@ -814,6 +832,10 @@
         <input type="email" id="f-email" placeholder="jan@voorbeeld.nl" />
       </div>
       <div class="form-group">
+        <label>Website <span class="optional">(optioneel)</span></label>
+        <input type="url" id="f-website" placeholder="https://www.voorbeeld.nl" />
+      </div>
+      <div class="form-group">
         <label>Geboortedatum <span class="optional">(optioneel)</span></label>
         <div class="datum-wrap">
           <input type="number" id="f-geb-dag"  placeholder="DD"   min="1"  max="31"   maxlength="2" oninput="valideerDatumLive()" />
@@ -836,12 +858,26 @@
         </div>
         <span class="error-msg" id="e-geboortedatum"></span>
       </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>Notities <span class="optional">(optioneel)</span></label>
+        <textarea id="f-notities" rows="2" placeholder="Vrije notities…" style="resize:vertical;font-family:inherit;font-size:0.9rem;"></textarea>
+      </div>
     </div>
     <div class="form-actions">
       <button class="btn-primary" onclick="savePersoon()">💾 Opslaan</button>
+      <button class="btn-success" onclick="resetForm()" id="btn-nieuw">➕ Nieuw</button>
       <button class="btn-outline" onclick="resetForm()">✖ Annuleren</button>
     </div>
     <input type="hidden" id="edit-id" value="" />
+  </div>
+
+  <!-- VERJAARDAGSOVERZICHT -->
+  <div id="verjaardag-paneel" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <strong style="color:#166534;">🎂 Komende verjaardagen</strong>
+      <button class="btn-outline btn-sm" onclick="document.getElementById('verjaardag-paneel').style.display='none'">✖</button>
+    </div>
+    <div id="verjaardag-lijst" style="font-size:0.88rem;"></div>
   </div>
 
   <!-- ZOEKBALK -->
@@ -856,12 +892,18 @@
         <option value="woonplaats">Sorteer: Woonplaats</option>
         <option value="geboortedatum">Sorteer: Geboortedatum</option>
       </select>
+      <select id="filter-categorie" onchange="renderTabel()" title="Filter op categorie">
+        <option value="">Alle categorieën</option>
+      </select>
       <button class="btn-outline btn-sm" onclick="toggleSortDir()">
         <span id="sort-icon">↑↓</span>
       </button>
       <button class="btn-outline btn-sm" onclick="toggleCategorieBadges()" id="btn-categorie">🏷 Categorie</button>
       <button class="btn-outline btn-sm" onclick="toggleBedrijfZichtbaar()" id="btn-bedrijf">🏢 Bedrijf</button>
       <button class="btn-outline btn-sm" onclick="toggleKaartKolom()" id="btn-kaart">📍 Kaart</button>
+      <button class="btn-outline btn-sm" onclick="toggleAangemaakt()" id="btn-aangemaakt" style="opacity:0.45;">📅 Aangemaakt</button>
+      <button class="btn-outline btn-sm" onclick="toggleFavorietenFilter()" id="btn-favorieten">☆ Favorieten</button>
+      <button class="btn-outline btn-sm" onclick="toggleKerstFilter()" id="btn-kerst">🎄 Kerstkaart</button>
       <button class="btn-outline btn-sm" onclick="toggleSelectieModus()" id="btn-selectie">☑ Selecteren</button>
       <button class="btn-outline btn-sm" onclick="exporteerVCard()" title="Exporteer als vCard (.vcf)">📲 vCard</button>
       <button class="btn-danger btn-sm" onclick="confirmAllesVerwijderen()" title="Alles verwijderen">🗑 Alles</button>
@@ -891,6 +933,7 @@
             <th onclick="setSort('telefoon')">Telefoon <span class="sort-icon">↕</span></th>
             <th onclick="setSort('email')">E-mail <span class="sort-icon">↕</span></th>
             <th onclick="setSort('geboortedatum')">Geboortedatum <span class="sort-icon">↕</span></th>
+            <th id="th-aangemaakt" onclick="setSort('aangemaakt')" style="display:none;">Aangemaakt <span class="sort-icon">↕</span></th>
             <th>Acties</th>
           </tr>
         </thead>
@@ -1105,6 +1148,41 @@
     document.getElementById('backup-banner').style.display = 'none';
   }
 
+  // ── VERJAARDAGEN ──
+  function toonVerjaardagen() {
+    const paneel = document.getElementById('verjaardag-paneel');
+    if (paneel.style.display !== 'none') { paneel.style.display = 'none'; return; }
+    const nu = new Date();
+    const ditJaar = nu.getFullYear();
+    const komende = personen
+      .filter(p => p.geboortedatum)
+      .map(p => {
+        const [y, m, d] = p.geboortedatum.split('-').map(Number);
+        let verjaardag = new Date(ditJaar, m - 1, d);
+        if (verjaardag < nu) verjaardag = new Date(ditJaar + 1, m - 1, d);
+        const dagenTot = Math.ceil((verjaardag - nu) / 86400000);
+        const leeft = verjaardag.getFullYear() - y;
+        return { p, verjaardag, dagenTot, leeft };
+      })
+      .sort((a, b) => a.dagenTot - b.dagenTot)
+      .slice(0, 10);
+    const lijst = document.getElementById('verjaardag-lijst');
+    if (komende.length === 0) {
+      lijst.innerHTML = '<em style="color:var(--muted)">Geen geboortedatums ingevoerd.</em>';
+    } else {
+      lijst.innerHTML = komende.map(({ p, verjaardag, dagenTot, leeft }) => {
+        const dag = verjaardag.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+        const wanneer = dagenTot === 0 ? '🎉 Vandaag!' : dagenTot === 1 ? 'Morgen' : `Over ${dagenTot} dagen`;
+        return `<div style="display:flex;gap:12px;padding:4px 0;border-bottom:1px solid #bbf7d0;">
+          <span style="width:110px;color:#166534;font-weight:600;">${wanneer}</span>
+          <span style="flex:1;">${volledigeNaam(p)}</span>
+          <span style="color:var(--muted);">${dag} (${leeft} jaar)</span>
+        </div>`;
+      }).join('');
+    }
+    paneel.style.display = 'block';
+  }
+
   // ── JSON export (voor cross-browser overdracht) ──
   function exportJSON() {
     const json = JSON.stringify(personen, null, 2);
@@ -1161,7 +1239,9 @@
       landnummer:    document.getElementById('f-landnummer').value,
       telefoon:      veld('f-telefoon'),
       email:         veld('f-email'),
+      website:       veld('f-website'),
       geboortedatum: stelDatumSamen(),
+      notities:      document.getElementById('f-notities').value.trim(),
     };
   }
 
@@ -1494,11 +1574,27 @@
     return ok;
   }
 
+  function checkDubbel(data, editId) {
+    const naam = [data.voornaam, data.achternaam, data.bedrijf].filter(Boolean).join(' ').toLowerCase();
+    const adres = (data.adres || '').toLowerCase();
+    const dubbel = personen.find(p => {
+      if (p.id === editId) return false;
+      const pNaam = [p.voornaam, p.achternaam, p.bedrijf].filter(Boolean).join(' ').toLowerCase();
+      const pAdres = (p.adres || '').toLowerCase();
+      return naam && pNaam === naam && adres && pAdres === adres;
+    });
+    if (dubbel) {
+      return confirm(`⚠️ Mogelijk dubbel: "${volledigeNaam(dubbel)}" heeft hetzelfde naam en adres.\n\nToch opslaan?`);
+    }
+    return true;
+  }
+
   function savePersoon() {
     const data = getVelden();
     if (!valideer(data)) return;
 
     const editId = document.getElementById('edit-id').value;
+    if (!checkDubbel(data, editId)) return;
 
     if (editId) {
       const idx = personen.findIndex(p => p.id === editId);
@@ -1512,8 +1608,8 @@
     }
 
     slaOpData();
-    resetForm();
     renderTabel();
+    document.getElementById('form-title').textContent = '✅ Opgeslagen — pas aan of klik ➕ Nieuw';
   }
 
   function bewerkPersoon(id) {
@@ -1553,10 +1649,12 @@
     if (p.land === 'ID') document.getElementById('f-staat-tekst').value = p.staat || '';
     document.getElementById('f-telefoon').value      = p.telefoon || '';
     document.getElementById('f-email').value         = p.email || '';
+    document.getElementById('f-website').value       = p.website || '';
     vulDatumIn(p.geboortedatum || '');
+    document.getElementById('f-notities').value      = p.notities || '';
     document.getElementById('edit-id').value         = id;
     updatePostcodePlaceholder();
-    document.getElementById('form-title').textContent = '✏️ Persoon bewerken';
+    document.getElementById('form-title').textContent = '✏️ Bewerken';
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1589,7 +1687,7 @@
     document.getElementById('f-email').value         = '';
     vulDatumIn('');
     document.getElementById('edit-id').value         = '';
-    document.getElementById('form-title').textContent = '➕ Nieuwe persoon (adres gekopieerd)';
+    document.getElementById('form-title').textContent = '➕ Nieuw (adres gekopieerd)';
 
     toonToast('Adres gekopieerd — vul naam in en sla op');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1609,7 +1707,7 @@
     document.getElementById('f-categorie-anders').style.display = 'none';
     document.getElementById('f-categorie-anders').value = '';
     ['f-bedrijf','f-voornaam','f-tussenvoegsel','f-achternaam','f-adres','f-postcode',
-     'f-woonplaats','f-telefoon','f-email','edit-id']
+     'f-woonplaats','f-telefoon','f-email','f-website','f-notities','edit-id']
       .forEach(id => { document.getElementById(id).value = ''; });
     ['e-voornaam','e-achternaam','e-adres','e-postcode','e-woonplaats']
       .forEach(id => { document.getElementById(id).textContent = ''; });
@@ -1617,7 +1715,7 @@
       .forEach(id => { document.getElementById(id).classList.remove('error'); });
     document.getElementById("f-adrestype").value = "straat";
     updateAdresType();
-    document.getElementById('form-title').textContent = '✏️ Nieuwe persoon toevoegen';
+    document.getElementById('form-title').textContent = '✏️ Nieuwe entry toevoegen';
   }
 
   // ───── VERWIJDEREN ─────
@@ -1678,14 +1776,28 @@
     return ` (${leeft} jr)`;
   }
 
+  function vulCategorieFilter() {
+    const sel = document.getElementById('filter-categorie');
+    const huidig = sel.value;
+    const cats = [...new Set(personen.map(p => p.categorie).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="">Alle categorieën</option>' +
+      cats.map(c => `<option value="${c}"${c === huidig ? ' selected' : ''}>${c}</option>`).join('');
+  }
+
   function renderTabel() {
     const zoek = document.getElementById('zoekterm').value.toLowerCase();
+    const catFilter = document.getElementById('filter-categorie').value;
     sortKolom = document.getElementById('sort-kolom').value;
+    vulCategorieFilter();
 
     let gefilterd = personen.filter(p => {
-      const tekst = [volledigeNaam(p), p.bedrijf, p.categorie, p.adres, p.postcode, p.woonplaats, p.land, p.telefoon, p.email]
+      const tekst = [volledigeNaam(p), p.bedrijf, p.categorie, p.adres, p.postcode, p.woonplaats, p.land, p.telefoon, p.email, p.notities]
         .join(' ').toLowerCase();
-      return tekst.includes(zoek);
+      if (!tekst.includes(zoek)) return false;
+      if (catFilter && p.categorie !== catFilter) return false;
+      if (alleenFavorieten && !p.favoriet) return false;
+      if (alleenKerst && !p.kerstkaart) return false;
+      return true;
     });
 
     gefilterd.sort((a, b) => {
@@ -1718,17 +1830,21 @@
               const persNaam = [p.titel, p.voornaam, p.tussenvoegsel, p.achternaam].filter(Boolean).join(' ');
               const alsBedrijf = !persNaam && !!p.bedrijf;
               return (persNaam ? `<strong>${persNaam}</strong>` : '') +
-                (p.bedrijf ? `<span class="rij-bedrijf" style="display:${(bedrijfZichtbaar || alsBedrijf) ? 'block' : 'none'};font-size:${alsBedrijf ? '1rem' : '0.82rem'};font-weight:${alsBedrijf ? '700' : 'normal'};color:${alsBedrijf ? 'inherit' : 'var(--muted)'};">🏢 ${p.bedrijf}</span>` : '');
+                (p.bedrijf ? `<span class="rij-bedrijf" style="display:${(bedrijfZichtbaar || alsBedrijf) ? 'block' : 'none'};font-size:${alsBedrijf ? '1rem' : '0.82rem'};font-weight:${alsBedrijf ? '700' : 'normal'};color:${alsBedrijf ? 'inherit' : 'var(--muted)'};">🏢 ${p.bedrijf}</span>` : '') +
+                (p.notities ? `<span style="display:block;font-size:0.75rem;color:var(--muted);margin-top:2px;font-style:italic;" title="${p.notities.replace(/"/g,'&quot;')}">📝 ${p.notities.length > 50 ? p.notities.slice(0,50) + '…' : p.notities}</span>` : '');
             })()}
           </td>
           <td id="td-kaart-${p.id}" class="td-kaart" style="text-align:center;display:${kaartKolomZichtbaar ? '' : 'none'};">${p.adres ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([p.adres, p.postcode, p.woonplaats, p.land||'DE'].filter(Boolean).join(' '))}" target="_blank" title="Toon op kaart" style="text-decoration:none;font-size:1.1rem;">📍</a>` : ''}</td>
           <td>${p.adres || ''}</td>
           <td>${[p.postcode, p.woonplaats, p.staat].filter(Boolean).join(' ')}</td>
           <td>${{'NL':'🇳🇱 NL','DE':'🇩🇪 DE','ID':'🇮🇩 ID','AU':'🇦🇺 AU'}[p.land] || p.land || '🇳🇱 NL'}</td>
-          <td>${p.telefoon ? (() => { const vol = (p.landnummer||'') + ' ' + p.telefoon; return `<a href="tel:${vol.replace(/\s/g,'')}" style="color:var(--primary);text-decoration:none;">${vol}</a>`; })() : '<span style="color:#94a3b8">—</span>'}</td>
-          <td>${p.email ? `<a href="mailto:${p.email}" style="color:var(--primary);text-decoration:none;">${p.email}</a>` : '<span style="color:#94a3b8">—</span>'}</td>
+          <td>${p.telefoon ? (() => { const vol = (p.landnummer||'') + ' ' + p.telefoon; const wa = vol.replace(/[\s\+]/g,''); return `<a href="tel:${vol.replace(/\s/g,'')}" style="color:var(--primary);text-decoration:none;">${vol}</a> <a href="https://wa.me/${wa}" target="_blank" title="WhatsApp" style="text-decoration:none;">💬</a>`; })() : '<span style="color:#94a3b8">—</span>'}</td>
+          <td>${p.email ? `<a href="mailto:${p.email}" style="color:var(--primary);text-decoration:none;">${p.email}</a>` : '<span style="color:#94a3b8">—</span>'}${p.website ? ` <a href="${p.website}" target="_blank" title="${p.website}" style="text-decoration:none;">🌐</a>` : ''}</td>
           <td>${p.geboortedatum ? formatDatum(p.geboortedatum) + '<small style="color:var(--muted)">' + leeftijd(p.geboortedatum) + '</small>' : '<span style="color:#94a3b8">—</span>'}</td>
+          <td class="td-aangemaakt" style="display:${aangemaaktZichtbaar ? '' : 'none'};font-size:0.78rem;color:var(--muted);">${p.aangemaakt ? new Date(p.aangemaakt).toLocaleDateString('nl-NL') : '—'}</td>
           <td class="actions">
+            <button class="btn-outline btn-sm" onclick="toggleFavoriet('${p.id}')" title="${p.favoriet ? 'Verwijder uit favorieten' : 'Markeer als favoriet'}" style="font-size:1rem;padding:2px 6px;">${p.favoriet ? '⭐' : '☆'}</button>
+            <button class="btn-outline btn-sm" onclick="toggleKerst('${p.id}')" title="${p.kerstkaart ? 'Geen kerstkaart' : 'Kerstkaart sturen'}" style="font-size:1rem;padding:2px 6px;">${p.kerstkaart ? '🎄' : '🌲'}</button>
             <button class="btn-primary btn-sm" onclick="bewerkPersoon('${p.id}')">✏️ Bewerk</button>
             <button class="btn-outline btn-sm" onclick="kopieerAdres('${p.id}')" title="Zelfde adres, nieuwe persoon">📋 Adres</button>
             <button class="btn-outline btn-sm" onclick="toonQR('${p.id}')" title="vCard QR-code">📱 QR</button>
@@ -1808,6 +1924,58 @@
 
   // ───── SELECTIE & LABELS ─────
   let selectieModus = false;
+
+  function toggleDarkMode() {
+    const dark = document.body.classList.toggle('dark');
+    document.getElementById('btn-dark').textContent = dark ? '☀️' : '🌙';
+    localStorage.setItem('naw_dark', dark ? '1' : '0');
+  }
+  if (localStorage.getItem('naw_dark') === '1') {
+    document.body.classList.add('dark');
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('btn-dark');
+      if (btn) btn.textContent = '☀️';
+    });
+  }
+
+  let aangemaaktZichtbaar = false;
+  function toggleAangemaakt() {
+    aangemaaktZichtbaar = !aangemaaktZichtbaar;
+    document.getElementById('btn-aangemaakt').style.opacity = aangemaaktZichtbaar ? '1' : '0.45';
+    document.getElementById('th-aangemaakt').style.display = aangemaaktZichtbaar ? '' : 'none';
+    document.querySelectorAll('.td-aangemaakt').forEach(el => el.style.display = aangemaaktZichtbaar ? '' : 'none');
+  }
+
+  let alleenFavorieten = false;
+  let alleenKerst = false;
+  function toggleKerst(id) {
+    const p = personen.find(x => x.id === id);
+    if (!p) return;
+    p.kerstkaart = !p.kerstkaart;
+    slaOpData();
+    renderTabel();
+  }
+  function toggleKerstFilter() {
+    alleenKerst = !alleenKerst;
+    const btn = document.getElementById('btn-kerst');
+    btn.textContent = alleenKerst ? '🎄 Kerstlijst' : '🎄 Kerstkaart';
+    btn.style.opacity = alleenKerst ? '1' : '0.7';
+    renderTabel();
+  }
+  function toggleFavoriet(id) {
+    const p = personen.find(x => x.id === id);
+    if (!p) return;
+    p.favoriet = !p.favoriet;
+    slaOpData();
+    renderTabel();
+  }
+  function toggleFavorietenFilter() {
+    alleenFavorieten = !alleenFavorieten;
+    const btn = document.getElementById('btn-favorieten');
+    btn.textContent = alleenFavorieten ? '⭐ Favorieten' : '☆ Favorieten';
+    btn.style.opacity = alleenFavorieten ? '1' : '0.7';
+    renderTabel();
+  }
 
   let bedrijfZichtbaar = true;
   function toggleBedrijfZichtbaar() {
