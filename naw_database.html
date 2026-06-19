@@ -354,6 +354,19 @@
       min-width: 0;
     }
 
+    .multi-rij {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+    .multi-rij select { flex-shrink: 0; font-size: 0.85rem; }
+    .multi-rij .f-ln { width: 88px; }
+    .multi-rij .f-type { width: 76px; }
+    .multi-rij input { flex: 1; min-width: 0; }
+    .multi-rij .btn-verwijder { padding: 5px 10px; font-size: 1rem; line-height: 1; flex-shrink: 0; }
+    body.dark .multi-rij select, body.dark .multi-rij input { background: #0f172a; color: var(--text); border-color: var(--border); }
+
     .tel-wrap select:focus {
       z-index: 1;
       border-right: none;
@@ -815,27 +828,28 @@
         <input type="text" id="f-staat-tekst" placeholder="bijv. Jawa Barat" style="display:none;" />
         <span class="error-msg" id="e-staat"></span>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="grid-column: 1 / -1;">
         <label>Telefoon <span class="optional">(optioneel)</span></label>
-        <div class="tel-wrap">
-          <select id="f-landnummer" title="Landnummer" onchange="updateTelPlaceholder()">
-            <option value="+31">🇳🇱 +31</option>
-            <option value="+49">🇩🇪 +49</option>
-            <option value="+62">🇮🇩 +62</option>
-            <option value="+61">🇦🇺 +61</option>
-          </select>
-          <input type="tel" id="f-telefoon" placeholder="612345678" oninput="valideerTelefoonLive()" />
-          <span id="tel-teller" class="tel-teller" title="Aantal cijfers"></span>
-        </div>
+        <div id="tel-lijst"></div>
+        <button type="button" class="btn-outline btn-sm" onclick="voegTelToe()" style="margin-top:4px;">+ Nummer toevoegen</button>
         <span class="error-msg" id="e-telefoon"></span>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="grid-column: 1 / -1;">
         <label>E-mail <span class="optional">(optioneel)</span></label>
-        <input type="email" id="f-email" placeholder="jan@voorbeeld.nl" />
+        <div id="email-lijst"></div>
+        <button type="button" class="btn-outline btn-sm" onclick="voegEmailToe()" style="margin-top:4px;">+ E-mail toevoegen</button>
       </div>
       <div class="form-group">
         <label>Website <span class="optional">(optioneel)</span></label>
         <input type="url" id="f-website" placeholder="https://www.voorbeeld.nl" />
+      </div>
+      <div class="form-group">
+        <label>LinkedIn <span class="optional">(optioneel)</span></label>
+        <input type="url" id="f-linkedin" placeholder="https://linkedin.com/in/naam" />
+      </div>
+      <div class="form-group">
+        <label>Instagram <span class="optional">(optioneel)</span></label>
+        <input type="text" id="f-instagram" placeholder="@gebruikersnaam" />
       </div>
       <div class="form-group">
         <label>Geboortedatum <span class="optional">(optioneel)</span></label>
@@ -992,7 +1006,7 @@
           <th style="white-space:nowrap">Adres</th>
           <th style="white-space:nowrap">Telefoon</th>
           <th style="white-space:nowrap">E-mail</th>
-          <th style="white-space:nowrap">Geboortedatum</th>
+          <th style="white-space:nowrap">Geb.datum</th>
           <th style="white-space:nowrap">Land</th>
           <th id="print-th-aangemaakt" style="white-space:nowrap;display:none">Aangemaakt</th>
         </tr>
@@ -1221,6 +1235,72 @@
     inp.click();
   }
 
+  // ───── MEERDERE TELEFOONS / EMAILS ─────
+  function getTelefoons(p) {
+    if (p.telefoons && p.telefoons.length) return p.telefoons;
+    if (p.telefoon) return [{ nr: p.telefoon, type: 'privé', landnummer: p.landnummer || '+31' }];
+    return [];
+  }
+  function getEmails(p) {
+    if (p.emails && p.emails.length) return p.emails;
+    if (p.email) return [{ adres: p.email, type: 'privé' }];
+    return [];
+  }
+  const LN_OPTIES = `<option value="+31">🇳🇱 +31</option><option value="+49">🇩🇪 +49</option><option value="+62">🇮🇩 +62</option><option value="+61">🇦🇺 +61</option>`;
+  function telRijHTML(t) {
+    const ln = (t && t.landnummer) || '+31';
+    const tp = (t && t.type) || 'privé';
+    const nr = (t && t.nr) || '';
+    const lnOpts = ['+31','+49','+62','+61'].map(v => `<option value="${v}"${v===ln?' selected':''}>${{'+31':'🇳🇱 +31','+49':'🇩🇪 +49','+62':'🇮🇩 +62','+61':'🇦🇺 +61'}[v]}</option>`).join('');
+    const tpOpts = ['privé','werk','mobiel'].map(v => `<option${v===tp?' selected':''}>${v}</option>`).join('');
+    return `<div class="multi-rij"><select class="f-ln" style="width:92px;">${lnOpts}</select><select class="f-type" style="width:76px;">${tpOpts}</select><input type="tel" class="f-nr" placeholder="612345678" value="${nr}"><button type="button" class="btn-outline btn-sm btn-verwijder" onclick="verwijderRij(this,'tel')">−</button></div>`;
+  }
+  function emailRijHTML(e) {
+    const tp = (e && e.type) || 'privé';
+    const adres = (e && e.adres) || '';
+    const tpOpts = ['privé','werk'].map(v => `<option${v===tp?' selected':''}>${v}</option>`).join('');
+    return `<div class="multi-rij"><select class="f-type" style="width:76px;">${tpOpts}</select><input type="email" class="f-em" placeholder="naam@voorbeeld.nl" value="${adres}"><button type="button" class="btn-outline btn-sm btn-verwijder" onclick="verwijderRij(this,'email')">−</button></div>`;
+  }
+  function renderTelLijst(lijst) {
+    const c = document.getElementById('tel-lijst');
+    c.innerHTML = (lijst.length ? lijst : [null]).map(telRijHTML).join('');
+  }
+  function renderEmailLijst(lijst) {
+    const c = document.getElementById('email-lijst');
+    c.innerHTML = (lijst.length ? lijst : [null]).map(emailRijHTML).join('');
+  }
+  function voegTelToe() {
+    document.getElementById('tel-lijst').insertAdjacentHTML('beforeend', telRijHTML(null));
+  }
+  function voegEmailToe() {
+    document.getElementById('email-lijst').insertAdjacentHTML('beforeend', emailRijHTML(null));
+  }
+  function verwijderRij(btn, soort) {
+    const rij = btn.closest('.multi-rij');
+    const waarde = soort === 'tel'
+      ? rij.querySelector('.f-nr').value.trim()
+      : rij.querySelector('.f-em').value.trim();
+    if (waarde && !confirm(`Verwijder "${waarde}"?`)) return;
+    const c = rij.parentElement;
+    rij.remove();
+    if (!c.querySelector('.multi-rij')) {
+      c.innerHTML = soort === 'tel' ? telRijHTML(null) : emailRijHTML(null);
+    }
+  }
+  function leesTelefoons() {
+    return Array.from(document.querySelectorAll('#tel-lijst .multi-rij')).map(r => ({
+      landnummer: r.querySelector('.f-ln').value,
+      type: r.querySelector('.f-type').value,
+      nr: r.querySelector('.f-nr').value.trim()
+    })).filter(t => t.nr);
+  }
+  function leesEmails() {
+    return Array.from(document.querySelectorAll('#email-lijst .multi-rij')).map(r => ({
+      type: r.querySelector('.f-type').value,
+      adres: r.querySelector('.f-em').value.trim()
+    })).filter(e => e.adres);
+  }
+
   // ───── FORM ─────
   function getVelden() {
     return {
@@ -1239,10 +1319,11 @@
                        ? document.getElementById('f-staat-au').value
                        : (document.getElementById('f-land').value === 'ID'
                            ? veld('f-staat-tekst') : ''),
-      landnummer:    document.getElementById('f-landnummer').value,
-      telefoon:      veld('f-telefoon'),
-      email:         veld('f-email'),
+      telefoons:     leesTelefoons(),
+      emails:        leesEmails(),
       website:       veld('f-website'),
+      linkedin:      veld('f-linkedin'),
+      instagram:     veld('f-instagram'),
       geboortedatum: stelDatumSamen(),
       notities:      document.getElementById('f-notities').value.trim(),
     };
@@ -1351,11 +1432,7 @@
   };
 
   function updateTelPlaceholder() {
-    const ln = document.getElementById('f-landnummer').value;
-    const regel = TEL_REGELS[ln];
-    if (regel) document.getElementById('f-telefoon').placeholder = regel.placeholder;
-    // Hervalideer als er al iets ingevuld is
-    valideerTelefoonLive();
+    // Niet meer nodig (landnummer is nu per rij), behouden als no-op voor compatibiliteit
   }
 
   // Extraheer alleen de lokale cijfers, strip onzichtbare tekens,
@@ -1380,7 +1457,7 @@
 
   function valideerTelefoon(nummer, landnummer) {
     if (!nummer) return null;
-    const ln = landnummer || document.getElementById('f-landnummer').value;
+    const ln = landnummer || '+31';
     const regel = TEL_REGELS[ln];
     if (!regel) return null;
     const digits = telDigits(nummer, ln);
@@ -1393,46 +1470,9 @@
     return null;
   }
 
-  function valideerTelefoonLive() {
-    const nummer = veld('f-telefoon');
-    const teller = document.getElementById('tel-teller');
-    const inp    = document.getElementById('f-telefoon');
-    const err    = document.getElementById('e-telefoon');
-    const ln     = document.getElementById('f-landnummer').value;
-    const regel  = TEL_REGELS[ln];
-
-    if (!nummer) {
-      clearTelFout();
-      teller.className = 'tel-teller';
-      return;
-    }
-
-    const digits = telDigits(nummer, ln);
-    const n = digits.length;
-
-    // Teller bijwerken
-    if (regel) {
-      const doel = regel.min === regel.max ? `${regel.min}` : `${regel.min}–${regel.max}`;
-      teller.textContent = `${n} / ${doel}`;
-      const isGoed = n >= regel.min && n <= regel.max && /^\d+$/.test(digits);
-      teller.className = 'tel-teller zichtbaar ' + (isGoed ? 'goed' : 'fout');
-    }
-
-    const fout = valideerTelefoon(nummer);
-    if (fout) {
-      inp.classList.add('error');
-      err.textContent = fout;
-    } else {
-      inp.classList.remove('error');
-      err.textContent = '';
-    }
-  }
-
+  function valideerTelefoonLive() { /* no-op, validatie nu via save */ }
   function clearTelFout() {
-    document.getElementById('f-telefoon').classList.remove('error');
     document.getElementById('e-telefoon').textContent = '';
-    const teller = document.getElementById('tel-teller');
-    teller.className = 'tel-teller';
   }
 
   function updateAdresType() {
@@ -1462,10 +1502,9 @@
 
   function updatePostcodePlaceholder() {
     const land = document.getElementById('f-land').value;
-    // Sync landnummer dropdown mee
-    const ln = document.getElementById('f-landnummer');
-    if (LAND_NUMMER[land]) ln.value = LAND_NUMMER[land];
-    updateTelPlaceholder();
+    // Sync landnummer van eerste telefoonnummer-rij mee
+    const eersteRij = document.querySelector('#tel-lijst .multi-rij .f-ln');
+    if (eersteRij && LAND_NUMMER[land]) eersteRij.value = LAND_NUMMER[land];
 
     const inp = document.getElementById('f-postcode');
     if (land === 'DE') {
@@ -1564,14 +1603,14 @@
       ok = false;
     }
 
-    // Telefoon optioneel, maar als ingevuld dan geldig formaat
-    const telFout = valideerTelefoon(data.telefoon, data.landnummer);
+    // Telefoons optioneel, maar als ingevuld dan geldig formaat
+    document.getElementById('e-telefoon').textContent = '';
+    const telFout = Array.from(document.querySelectorAll('#tel-lijst .multi-rij'))
+      .map(r => valideerTelefoon(r.querySelector('.f-nr').value.trim(), r.querySelector('.f-ln').value))
+      .find(Boolean);
     if (telFout) {
       document.getElementById('e-telefoon').textContent = telFout;
-      document.getElementById('f-telefoon').classList.add('error');
       ok = false;
-    } else {
-      clearTelFout();
     }
 
     return ok;
@@ -1646,13 +1685,14 @@
     document.getElementById('f-postcode').value      = p.postcode || '';
     document.getElementById('f-woonplaats').value    = p.woonplaats || '';
     document.getElementById('f-land').value          = p.land || 'NL';
-    document.getElementById('f-landnummer').value    = p.landnummer || LAND_NUMMER[p.land] || '+31';
     updatePostcodePlaceholder(); // toon/verberg staatveld eerst
     if (p.land === 'AU') document.getElementById('f-staat-au').value   = p.staat || '';
     if (p.land === 'ID') document.getElementById('f-staat-tekst').value = p.staat || '';
-    document.getElementById('f-telefoon').value      = p.telefoon || '';
-    document.getElementById('f-email').value         = p.email || '';
+    renderTelLijst(getTelefoons(p));
+    renderEmailLijst(getEmails(p));
     document.getElementById('f-website').value       = p.website || '';
+    document.getElementById('f-linkedin').value      = p.linkedin || '';
+    document.getElementById('f-instagram').value     = p.instagram || '';
     vulDatumIn(p.geboortedatum || '');
     document.getElementById('f-notities').value      = p.notities || '';
     document.getElementById('edit-id').value         = id;
@@ -1675,7 +1715,6 @@
     document.getElementById('f-postcode').value   = p.postcode || '';
     document.getElementById('f-woonplaats').value = p.woonplaats || '';
     document.getElementById('f-land').value       = p.land || 'NL';
-    document.getElementById('f-landnummer').value = p.landnummer || LAND_NUMMER[p.land] || '+31';
     updatePostcodePlaceholder();
     if (p.land === 'AU') document.getElementById('f-staat-au').value    = p.staat || '';
     if (p.land === 'ID') document.getElementById('f-staat-tekst').value = p.staat || '';
@@ -1686,8 +1725,8 @@
     document.getElementById('f-tussenvoegsel').value = '';
     document.getElementById('f-achternaam').value    = '';
     document.getElementById('f-bedrijf').value       = '';
-    document.getElementById('f-telefoon').value      = '';
-    document.getElementById('f-email').value         = '';
+    renderTelLijst([]);
+    renderEmailLijst([]);
     vulDatumIn('');
     document.getElementById('edit-id').value         = '';
     document.getElementById('form-title').textContent = '➕ Nieuw (adres gekopieerd)';
@@ -1699,19 +1738,19 @@
 
   function resetForm() {
     document.getElementById('f-land').value = 'NL';
-    document.getElementById('f-landnummer').value = '+31';
     document.getElementById('f-staat-au').value = '';
     document.getElementById('f-staat-tekst').value = '';
     document.getElementById('staat-groep').style.display = 'none';
-    document.getElementById('tel-teller').className = 'tel-teller';
     leegDatum();
     vulTitelIn('');
     document.getElementById('f-categorie').value = '';
     document.getElementById('f-categorie-anders').style.display = 'none';
     document.getElementById('f-categorie-anders').value = '';
     ['f-bedrijf','f-voornaam','f-tussenvoegsel','f-achternaam','f-adres','f-postcode',
-     'f-woonplaats','f-telefoon','f-email','f-website','f-notities','edit-id']
+     'f-woonplaats','f-website','f-linkedin','f-instagram','f-notities','edit-id']
       .forEach(id => { document.getElementById(id).value = ''; });
+    renderTelLijst([]);
+    renderEmailLijst([]);
     ['e-voornaam','e-achternaam','e-adres','e-postcode','e-woonplaats']
       .forEach(id => { document.getElementById(id).textContent = ''; });
     ['f-voornaam','f-achternaam','f-adres','f-postcode','f-woonplaats']
@@ -1794,8 +1833,8 @@
     vulCategorieFilter();
 
     let gefilterd = personen.filter(p => {
-      const tekst = [volledigeNaam(p), p.bedrijf, p.categorie, p.adres, p.postcode, p.woonplaats, p.land, p.telefoon, p.email, p.notities]
-        .join(' ').toLowerCase();
+      const tekst = [volledigeNaam(p), p.bedrijf, p.categorie, p.adres, p.postcode, p.woonplaats, p.land, ...getTelefoons(p).map(t=>t.nr), ...getEmails(p).map(e=>e.adres), p.website, p.linkedin, p.instagram, p.notities]
+        .filter(Boolean).join(' ').toLowerCase();
       if (!tekst.includes(zoek)) return false;
       if (catFilter && p.categorie !== catFilter) return false;
       if (alleenFavorieten && !p.favoriet) return false;
@@ -1841,8 +1880,8 @@
           <td>${p.adres || ''}</td>
           <td>${[p.postcode, p.woonplaats, p.staat].filter(Boolean).join(' ')}</td>
           <td>${{'NL':'🇳🇱 NL','DE':'🇩🇪 DE','ID':'🇮🇩 ID','AU':'🇦🇺 AU'}[p.land] || p.land || '🇳🇱 NL'}</td>
-          <td>${p.telefoon ? (() => { const vol = (p.landnummer||'') + ' ' + p.telefoon; const wa = vol.replace(/[\s\+]/g,''); return `<a href="tel:${vol.replace(/\s/g,'')}" style="color:var(--primary);text-decoration:none;">${vol}</a> <a href="https://wa.me/${wa}" target="_blank" title="WhatsApp" style="text-decoration:none;">💬</a>`; })() : '<span style="color:#94a3b8">—</span>'}</td>
-          <td>${p.email ? `<a href="mailto:${p.email}" style="color:var(--primary);text-decoration:none;">${p.email}</a>` : '<span style="color:#94a3b8">—</span>'}${p.website ? ` <a href="${p.website}" target="_blank" title="${p.website}" style="text-decoration:none;">🌐</a>` : ''}</td>
+          <td>${(() => { const tels = getTelefoons(p); if (!tels.length) return '<span style="color:#94a3b8">—</span>'; return tels.map(t => { const vol = (t.landnummer||'') + ' ' + t.nr; const wa = vol.replace(/[\s\+]/g,''); return `<span style="white-space:nowrap;"><a href="tel:${vol.replace(/\s/g,'')}" style="color:var(--primary);text-decoration:none;">${vol}</a>${t.type !== 'privé' ? ` <small style="color:var(--muted)">${t.type}</small>` : ''} <a href="https://wa.me/${wa}" target="_blank" title="WhatsApp" style="text-decoration:none;">💬</a></span>`; }).join('<br>'); })()}</td>
+          <td>${(() => { const mails = getEmails(p); const mailHtml = mails.length ? mails.map(e => `<a href="mailto:${e.adres}" style="color:var(--primary);text-decoration:none;">${e.adres}</a>${e.type !== 'privé' ? ` <small style="color:var(--muted)">${e.type}</small>` : ''}`).join('<br>') : '<span style="color:#94a3b8">—</span>'; const socials = [p.website ? `<a href="${p.website}" target="_blank" style="text-decoration:none;" title="${p.website}">🌐</a>` : '', p.linkedin ? `<a href="${p.linkedin}" target="_blank" style="text-decoration:none;" title="LinkedIn">💼</a>` : '', p.instagram ? `<a href="https://instagram.com/${p.instagram.replace('@','')}" target="_blank" style="text-decoration:none;" title="Instagram ${p.instagram}">📸</a>` : ''].filter(Boolean).join(' '); return mailHtml + (socials ? ' ' + socials : ''); })()}</td>
           <td>${p.geboortedatum ? formatDatum(p.geboortedatum) + '<small style="color:var(--muted)">' + leeftijd(p.geboortedatum) + '</small>' : '<span style="color:#94a3b8">—</span>'}</td>
           <td class="td-aangemaakt" style="display:${aangemaaktZichtbaar ? '' : 'none'};font-size:0.78rem;color:var(--muted);">${p.aangemaakt ? new Date(p.aangemaakt).toLocaleDateString('nl-NL') : '—'}</td>
           <td class="actions">
@@ -2139,18 +2178,24 @@
   // ───── QR / vCard ─────
   function maakVCard(p) {
     const naam = volledigeNaam(p);
-    const adresRegel = [p.adres, p.woonplaats, p.staat, p.postcode, p.land || 'DE'].join(';');
-    const tel = p.landnummer && p.telefoon ? (p.landnummer + p.telefoon.replace(/\s/g,'')) : (p.telefoon || '');
+    const typeMap = { 'privé': 'HOME', 'werk': 'WORK', 'mobiel': 'CELL' };
+    const tels = getTelefoons(p).map(t => {
+      const nr = (t.landnummer || '') + t.nr.replace(/\s/g,'');
+      return `TEL;TYPE=${typeMap[t.type]||'HOME'}:${nr}`;
+    });
+    const emails = getEmails(p).map(e => `EMAIL;TYPE=${e.type==='werk'?'WORK':'HOME'}:${e.adres}`);
     const lines = [
       'BEGIN:VCARD',
       'VERSION:3.0',
       `FN:${naam}`,
       `N:${p.achternaam || ''};${p.voornaam || ''};${p.tussenvoegsel || ''};${p.titel || ''};`,
-      p.bedrijf   ? `ORG:${p.bedrijf}`          : '',
-      p.adres     ? `ADR:;;${p.adres};${p.woonplaats||''};${p.staat||''};${p.postcode||''};${p.land||'DE'}` : '',
-      tel         ? `TEL:${tel}`                 : '',
-      p.email     ? `EMAIL:${p.email}`           : '',
+      p.bedrijf ? `ORG:${p.bedrijf}` : '',
+      p.adres   ? `ADR:;;${p.adres};${p.woonplaats||''};${p.staat||''};${p.postcode||''};${p.land||'DE'}` : '',
+      ...tels,
+      ...emails,
       p.geboortedatum ? `BDAY:${p.geboortedatum.replace(/-/g,'')}` : '',
+      p.website  ? `URL:${p.website}` : '',
+      p.linkedin ? `URL;type=LinkedIn:${p.linkedin}` : '',
       'END:VCARD'
     ].filter(Boolean).join('\n');
     return lines;
@@ -2203,8 +2248,8 @@
     const zoek = document.getElementById('zoekterm').value.toLowerCase();
     const catFilter = document.getElementById('filter-categorie').value;
     let lijst = personen.filter(p => {
-      const tekst = [volledigeNaam(p), p.bedrijf, p.categorie, p.adres, p.postcode, p.woonplaats, p.land, p.telefoon, p.email, p.notities]
-        .join(' ').toLowerCase();
+      const tekst = [volledigeNaam(p), p.bedrijf, p.categorie, p.adres, p.postcode, p.woonplaats, p.land, ...getTelefoons(p).map(t=>t.nr), ...getEmails(p).map(e=>e.adres), p.website, p.linkedin, p.instagram, p.notities]
+        .filter(Boolean).join(' ').toLowerCase();
       if (!tekst.includes(zoek)) return false;
       if (catFilter && p.categorie !== catFilter) return false;
       if (alleenFavorieten && !p.favoriet) return false;
@@ -2238,8 +2283,8 @@
           ${p.adres || ''}<br>
           <span style="white-space:nowrap;">${p.postcode || ''} ${p.woonplaats || ''}${p.staat ? ', ' + p.staat : ''}</span>
         </td>
-        <td style="white-space:nowrap;">${p.telefoon ? (p.landnummer || '') + ' ' + p.telefoon : ''}</td>
-        <td style="word-break:break-all;font-size:0.78rem;">${p.email || ''}</td>
+        <td style="font-size:0.8rem;">${getTelefoons(p).map(t => (t.landnummer||'')+' '+t.nr + (t.type!=='privé'?' ('+t.type+')':'')).join('<br>') || ''}</td>
+        <td style="word-break:break-all;font-size:0.78rem;">${getEmails(p).map(e => e.adres + (e.type!=='privé'?' ('+e.type+')':'')).join('<br>') || ''}</td>
         <td style="white-space:nowrap;">${p.geboortedatum ? formatDatum(p.geboortedatum) : ''}</td>
         <td style="white-space:nowrap;">${(vlag[p.land || 'NL'] || '')} ${p.land || 'NL'}</td>
         ${aangemaaktZichtbaar ? `<td style="font-size:0.72rem;color:#64748b;">${p.aangemaakt ? new Date(p.aangemaakt).toLocaleDateString('nl-NL') : ''}</td>` : ''}
@@ -2279,12 +2324,13 @@
 
   // ───── INIT ─────
   laadData();
+  renderTelLijst([]);
+  renderEmailLijst([]);
   renderTabel();
   checkBackupReminder();
   document.getElementById('btn-categorie').style.opacity = '0.45';
   document.getElementById('btn-kaart').style.opacity = '0.45';
   document.getElementById('th-kaart').style.display = 'none';
-  updateTelPlaceholder();
 
   // Sluit modals bij klik buiten
   document.getElementById('modal-overlay').addEventListener('click', e => {
