@@ -994,6 +994,7 @@
           <th style="white-space:nowrap">E-mail</th>
           <th style="white-space:nowrap">Geboortedatum</th>
           <th style="white-space:nowrap">Land</th>
+          <th id="print-th-aangemaakt" style="white-space:nowrap;display:none">Aangemaakt</th>
         </tr>
       </thead>
       <tbody id="print-tbody"></tbody>
@@ -1848,7 +1849,7 @@
             <button class="btn-outline btn-sm" onclick="toggleFavoriet('${p.id}')" title="${p.favoriet ? 'Verwijder uit favorieten' : 'Markeer als favoriet'}" style="font-size:1rem;padding:2px 6px;">${p.favoriet ? '⭐' : '☆'}</button>
 
             <button class="btn-primary btn-sm" onclick="bewerkPersoon('${p.id}')">✏️ Bewerk</button>
-            <button class="btn-outline btn-sm" onclick="kopieerAdres('${p.id}')" title="Zelfde adres, nieuwe persoon">📋 Adres</button>
+            <button class="btn-outline btn-sm" onclick="kopieerAdres('${p.id}')" title="Kopieer adres naar nieuwe entry">📋 Copy</button>
             <button class="btn-outline btn-sm" onclick="toonQR('${p.id}')" title="vCard QR-code">📱 QR</button>
             <button class="btn-danger btn-sm" onclick="verwijderPersoon('${p.id}')">🗑</button>
           </td>
@@ -2198,26 +2199,40 @@
 
   // ───── AFDRUKKEN ─────
   function drukAf() {
+    // Gebruik dezelfde filters als de huidige tabelweergave
     const zoek = document.getElementById('zoekterm').value.toLowerCase();
+    const catFilter = document.getElementById('filter-categorie').value;
     let lijst = personen.filter(p => {
-      const tekst = [volledigeNaam(p), p.bedrijf, p.categorie, p.adres, p.postcode, p.woonplaats]
+      const tekst = [volledigeNaam(p), p.bedrijf, p.categorie, p.adres, p.postcode, p.woonplaats, p.land, p.telefoon, p.email, p.notities]
         .join(' ').toLowerCase();
-      return tekst.includes(zoek);
+      if (!tekst.includes(zoek)) return false;
+      if (catFilter && p.categorie !== catFilter) return false;
+      if (alleenFavorieten && !p.favoriet) return false;
+      return true;
     });
-    lijst.sort((a, b) => (a.achternaam || '').localeCompare(b.achternaam || '', 'nl'));
+    const sortVal = (p) => (p[sortKolom] || p.bedrijf || '').toLowerCase();
+    lijst.sort((a, b) => {
+      if (sortVal(a) < sortVal(b)) return -1 * sortDir;
+      if (sortVal(a) > sortVal(b)) return 1 * sortDir;
+      return 0;
+    });
 
     const vlag = { NL: '🇳🇱', DE: '🇩🇪', ID: '🇮🇩', AU: '🇦🇺' };
     const datum = new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
     document.getElementById('print-meta').textContent =
       `${lijst.length} personen · Afgedrukt op ${datum}` +
-      (zoek ? ` · Filter: "${zoek}"` : '');
+      (zoek ? ` · Filter: "${zoek}"` : '') +
+      (catFilter ? ` · Categorie: ${catFilter}` : '') +
+      (alleenFavorieten ? ' · Alleen favorieten' : '');
 
-    document.getElementById('print-tbody').innerHTML = lijst.map(p => `
-      <tr>
+    document.getElementById('print-tbody').innerHTML = lijst.map(p => {
+      const persNaam = [p.titel, p.voornaam, p.tussenvoegsel, p.achternaam].filter(Boolean).join(' ');
+      const alsBedrijf = !persNaam && !!p.bedrijf;
+      return `<tr>
         <td>
-          <strong>${volledigeNaam(p)}</strong>
-          ${p.categorie ? `<br><span class="print-cat-badge">${p.categorie}</span>` : ''}
-          ${p.bedrijf ? `<br><span style="font-size:0.78rem;color:#64748b;">${p.bedrijf}</span>` : ''}
+          <strong>${persNaam || (p.bedrijf ? '🏢 ' + p.bedrijf : '—')}</strong>
+          ${categorieBadgesZichtbaar && p.categorie ? `<br><span class="print-cat-badge">${p.categorie}</span>` : ''}
+          ${bedrijfZichtbaar && p.bedrijf && persNaam ? `<br><span style="font-size:0.78rem;color:#64748b;">🏢 ${p.bedrijf}</span>` : ''}
         </td>
         <td>
           ${p.adres || ''}<br>
@@ -2227,8 +2242,13 @@
         <td style="word-break:break-all;font-size:0.78rem;">${p.email || ''}</td>
         <td style="white-space:nowrap;">${p.geboortedatum ? formatDatum(p.geboortedatum) : ''}</td>
         <td style="white-space:nowrap;">${(vlag[p.land || 'NL'] || '')} ${p.land || 'NL'}</td>
-      </tr>
-    `).join('');
+        ${aangemaaktZichtbaar ? `<td style="font-size:0.72rem;color:#64748b;">${p.aangemaakt ? new Date(p.aangemaakt).toLocaleDateString('nl-NL') : ''}</td>` : ''}
+      </tr>`;
+    }).join('');
+
+    // Pas header aan op aangemaaktZichtbaar
+    const printTh = document.getElementById('print-th-aangemaakt');
+    if (printTh) printTh.style.display = aangemaaktZichtbaar ? '' : 'none';
 
     document.getElementById('print-venster').classList.add('open');
   }
